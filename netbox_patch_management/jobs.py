@@ -33,11 +33,15 @@ class StartPatchJob(JobRunner):
             raise BackendError('No patch backend configured.')
         user, today = self.job.user, date.today()
         started = failed = 0
+        jobs = dict(backend.job_choices())  # BackendError aborts the whole run before anything starts
         for obj in load_objects(object_keys):
             # Re-check: state may have changed since the confirmation page.
             update_class = update_class_of(obj)
             ok, reason = backend.can_start(obj)
-            if is_locked(obj) or update_class is None or not update_class.backend_job_ref or not ok:
+            job_ref = update_class.backend_job_ref if update_class else ''
+            if jobs and job_ref not in jobs:
+                ok, reason = False, 'job not found in backend'
+            if is_locked(obj) or not job_ref or not ok:
                 self.logger.warning(f'{obj}: skipped ({reason or "locked or no job"})')
                 continue
             try:

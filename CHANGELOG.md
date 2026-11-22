@@ -6,7 +6,16 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Ve
 ### Offen
 - baramundi-Backend am echten bMS verifizieren (Job-Start, ob `POST JobInstances` ohne `/Start` schon ausführt).
 - PowerShell lokal: `pwsh` ist im Test-Image nicht installiert, getestet nur mit Fake-Executable. SSH ohne Testhost ungetestet.
-- Security-Audit (`SECURITY-ANALYSE-<Datum>.md`).
+
+## [0.2.1] – 2026-11-22
+### Sicherheit
+Ergebnis des Security-Audits vom 2026-11-22 (Bericht lokal, nicht im Repo):
+- Tokens nur noch aus Umgebungsvariablen mit Präfix `PATCH_BACKEND_` (`secret_env_prefix`). Vorher hätte ein Einstellungs-Admin beliebige Prozess-Secrets an externe Hosts senden können.
+- REST: Ausdrücke in URL-Vorlagen werden URL-kodiert, URLs bleiben unterhalb der Basis-URL (gleicher Origin), Token nur über HTTPS (Loopback ausgenommen). Ausdrücke im Body werden JSON-kodiert (**Breaking:** `{"host": {{ obj.name }}}` statt `"{{ obj.name }}"`).
+- PowerShell: lokales `pwsh` nur noch über `PLUGINS_CONFIG['pwsh_path']`, nicht mehr in der Oberfläche; SSH-Host/-User dürfen nicht mit `-` beginnen, Remote-Pfade keine Leerzeichen (keine Argument-Injection), Key-/known_hosts-Pfade absolut.
+- `last_patched` kann nicht mehr per REST-API, Massenbearbeitung oder CSV-Import am Patch-Protokoll vorbei geändert werden (HTTP 400). Neue Objekte dürfen ein vergangenes Datum mitbringen.
+- Jobstart prüft die Job-Referenz gegen die Job-Liste des Backends. Die Bestätigungsseite zeigt den Job-Namen.
+- Einstellungen und Verbindungstest nur für Superuser. Die Klassen-Auswahl der Planung respektiert Objektrechte.
 
 ## [0.2.0] – 2026-11-22
 ### Neu

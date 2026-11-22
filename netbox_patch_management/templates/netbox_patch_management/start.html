@@ -15,7 +15,7 @@
           <tr>
             <td><a href="{{ r.obj.get_absolute_url }}">{{ r.obj }}</a></td>
             <td>{{ r.update_class|placeholder }}</td>
-            <td><code>{{ r.update_class.backend_job_ref|placeholder }}</code></td>
+            <td>{{ r.job_label|placeholder }}{% if r.job_label != r.update_class.backend_job_ref %} <code class="small">{{ r.update_class.backend_job_ref }}</code>{% endif %}</td>
             <td>{% if r.ok %}<i class="mdi mdi-check text-success"></i>{% else %}<span class="text-danger">{{ r.reason }}</span>{% endif %}</td>
           </tr>
         {% empty %}

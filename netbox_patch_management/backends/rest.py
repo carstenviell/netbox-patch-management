@@ -7,6 +7,7 @@ Values are taken from JSON responses via dotted paths ('data.0.id'; empty = whol
 Templates and URLs come from the admin-only settings page, never from object data.
 """
 import json
+from urllib.parse import quote, urlsplit
 
 import requests
 from django import forms
@@ -14,10 +15,13 @@ from django.utils.translation import gettext_lazy as _
 
 from utilities.jinja2 import render_jinja2
 
-from . import BackendError, EmsReport, PatchBackend, TimeoutField, env_secret, parse_date, parse_datetime
+from . import (BackendError, EmsReport, PatchBackend, TimeoutField, check_env_name, env_secret, parse_date,
+               parse_datetime)
 from ..models import PatchStatusChoices
 
-TEMPLATE_HELP = _('Jinja2 template; variables: obj, cf, job_ref, external_id')
+TEMPLATE_HELP = _('Jinja2 template; variables: obj, cf, job_ref, external_id. '
+                  'Every {{ ... }} value is URL-encoded in URLs and JSON-encoded in bodies.')
+LOOPBACK = ('127.0.0.1', 'localhost', '::1')
 PATH_HELP = _('Dotted path in the JSON response, e.g. data.0.id')
 
 
@@ -84,6 +88,14 @@ class RestConfigForm(forms.Form):
     state_compliant_value = forms.CharField(label=_('Compliant value'), initial='true', required=False)
     state_detail_path = forms.CharField(label=_('Detail path'), required=False, help_text=PATH_HELP)
 
+    def clean_token_env(self):
+        if self.cleaned_data['token_env']:
+            try:
+                check_env_name(self.cleaned_data['token_env'])
+            except BackendError as exc:
+                raise forms.ValidationError(str(exc))
+        return self.cleaned_data['token_env']
+
     def clean_status_map(self):
         parse_status_map(self.cleaned_data['status_map'])
         return self.cleaned_data['status_map']
@@ -94,19 +106,30 @@ class RestBackend(PatchBackend):
     label = 'REST API'
     config_form = RestConfigForm
 
-    def _render(self, template, **context):
+    def _render(self, template, finalize, **context):
+        """Render with every expression value passed through finalize (URL- or JSON-encoding), so
+        object data (names, custom fields) can never change the URL structure or the JSON body."""
         try:
-            return render_jinja2(template, context).strip()
+            return render_jinja2(template, context, environment_params={'finalize': finalize}).strip()
         except Exception as exc:  # template errors must not crash the caller
             raise BackendError(_('Template error: %(err)s') % {'err': exc})
 
     def _url(self, template, **context):
-        url = self._render(template, **context)
-        return url if url.startswith(('http://', 'https://')) else self.config['base_url'].rstrip('/') + '/' + url.lstrip('/')
+        """Relative path below base_url only - the request never leaves the configured origin."""
+        path = self._render(template, lambda v: quote(str(v), safe=''), **context)
+        base = self.config['base_url'].rstrip('/')
+        url = base + '/' + path.lstrip('/')
+        b, u = urlsplit(base), urlsplit(url)
+        if '://' in path or (u.scheme, u.netloc) != (b.scheme, b.netloc):
+            raise BackendError(_('The URL must stay below the base URL'))
+        return url
 
     def _request(self, method, url, body=None):
         headers = {'Accept': 'application/json'}
         if self.config.get('token_env'):
+            parts = urlsplit(url)
+            if parts.scheme != 'https' and parts.hostname not in LOOPBACK:
+                raise BackendError(_('The token is only sent via HTTPS'))
             headers[self.config.get('auth_header') or 'Authorization'] = \
                 (self.config.get('auth_prefix') or '') + env_secret(self.config['token_env'])
         if body:
@@ -144,7 +167,8 @@ class RestBackend(PatchBackend):
 
     def start(self, obj, job_ref):
         ctx = {'obj': obj, 'cf': obj.custom_field_data, 'job_ref': job_ref, 'external_id': ''}
-        body = self._render(self.config['start_body'], **ctx) if self.config.get('start_body') else None
+        body = (self._render(self.config['start_body'], lambda v: json.dumps(v, default=str), **ctx)
+                if self.config.get('start_body') else None)
         if body:
             try:
                 json.loads(body)

@@ -17,6 +17,7 @@ from virtualization.models import VirtualMachine
 
 from .custom_fields import CF_CLASS, CF_INTERVAL, CF_LAST, CF_LOCK
 from .models import EmsState, PatchLog, PatchSettings, PatchStatusChoices, UpdateClass
+from .signals import plugin_write
 
 PATCHABLE_MODELS = (Device, VirtualMachine)
 
@@ -105,7 +106,8 @@ def mark_patched(obj, day, force=False):
     if hasattr(obj, 'snapshot'):
         obj.snapshot()  # changelog entry with pre-change data (when change logging is active)
     obj.custom_field_data[CF_LAST] = day.isoformat()
-    obj.save()
+    with plugin_write():
+        obj.save()
     return True
 
 

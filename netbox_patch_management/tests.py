@@ -135,6 +135,27 @@ class ManualTests(Base):
         self.assertEqual(r.status_code, 200)  # invalid mapping is rejected
 
 
+class GuardTests(Base):
+    def test_last_patched_only_via_plugin(self):
+        from utilities.exceptions import AbortRequest
+        from .logic import mark_patched
+        dev = Device.objects.get(pk=self.fresh.pk)
+        dev.custom_field_data[CF_LAST] = '2030-01-01'  # e.g. REST API, bulk edit, CSV import
+        with self.assertRaises(AbortRequest):
+            dev.save()
+        dev.refresh_from_db()
+        self.assertTrue(mark_patched(dev, TODAY))
+        dev.description = 'other change'  # unrelated edits stay possible
+        dev.save()
+
+    def test_settings_superuser_only(self):
+        from django.contrib.auth.models import Permission
+        user = User.objects.create(username='settings_admin')
+        user.user_permissions.add(Permission.objects.get(codename='change_patchsettings'))
+        self.client.force_login(user)
+        self.assertEqual(self.client.get('/plugins/patch-management/settings/').status_code, 403)
+
+
 class EmsTests(Base):
     def setUp(self):
         self.backend = FakeBackend()
@@ -185,7 +206,7 @@ class _Handler(BaseHTTPRequestHandler):
     def _reply(self):
         body = self.rfile.read(int(self.headers.get('Content-Length') or 0)).decode()
         type(self).seen.append((self.command, self.path, body, self.headers.get('Authorization')))
-        code, data = self.routes.get((self.command, self.path), (404, {}))
+        code, data = self.routes.get((self.command, self.path.split('?')[0]), (404, {}))
         payload = json.dumps(data).encode()
         self.send_response(code)
         self.send_header('Content-Type', 'application/json')
@@ -211,9 +232,9 @@ class RestBackendTests(Base):
 
     def backend(self):
         return RestBackend({
-            'base_url': self.base, 'auth_header': 'Authorization', 'auth_prefix': 'Bearer ', 'token_env': 'PM_TEST_TOKEN',
+            'base_url': self.base, 'auth_header': 'Authorization', 'auth_prefix': 'Bearer ', 'token_env': 'PATCH_BACKEND_TEST_TOKEN',
             'timeout': 5, 'start_method': 'POST', 'start_url': '/jobs/{{ job_ref }}/run',
-            'start_body': '{"host": "{{ obj.name }}"}', 'start_id_path': 'result.id',
+            'start_body': '{"host": {{ obj.name }}}', 'start_id_path': 'result.id',
             'status_url': '/runs/{{ external_id }}', 'status_path': 'state', 'status_finished_path': 'end',
             'status_map': 'Done=succeeded\nBroken=failed',
             'state_url': '/hosts/{{ obj.name }}', 'state_date_path': 'patched', 'state_compliant_path': 'ok',
@@ -236,7 +257,7 @@ class RestBackendTests(Base):
         b = self.backend()
         with self.assertRaises(BackendError):  # token variable not set
             b.start(self.never, 'monthly')
-        os.environ['PM_TEST_TOKEN'] = 'secret'
+        os.environ['PATCH_BACKEND_TEST_TOKEN'] = 'secret'
         try:
             self.assertEqual(b.start(self.never, 'monthly'), 'r1')
             self.assertEqual(_Handler.seen[-1][2], '{"host": "never"}')
@@ -248,7 +269,41 @@ class RestBackendTests(Base):
             self.assertEqual((reports[self.never].last_patched, reports[self.never].compliant),
                              (date(2026, 11, 19), False))
         finally:
-            del os.environ['PM_TEST_TOKEN']
+            del os.environ['PATCH_BACKEND_TEST_TOKEN']
+
+    def test_object_data_cannot_change_url_or_body(self):
+        _Handler.routes, _Handler.seen = {('POST', '/jobs/j/run'): (201, {'result': {'id': 'r'}})}, []
+        evil = Device.objects.get(pk=self.never.pk)
+        evil.name = 'x", "admin": true, "y": "../../admin?'
+        b = self.backend()
+        b.config['token_env'] = ''
+        b.config['start_url'] = '/jobs/j/run?h={{ obj.name }}'
+        self.assertEqual(b.start(evil, 'j'), 'r')
+        method, path, body, _auth = _Handler.seen[-1]
+        self.assertEqual(json.loads(body), {'host': evil.name})          # JSON-encoded, no injected keys
+        self.assertNotIn('../', path.split('?h=')[1])                     # URL-encoded
+        b.config['start_url'] = '{{ cf.x }}'
+        evil.custom_field_data['x'] = 'https://attacker.example/steal'
+        with self.assertRaises(BackendError):                              # never leaves the base origin
+            b.start(evil, 'j')
+        b.config['start_url'] = 'https://attacker.example/steal'
+        with self.assertRaises(BackendError):
+            b.start(evil, 'j')
+
+    def test_secret_env_name_and_https(self):
+        from .backends.rest import RestConfigForm
+        form = RestConfigForm({'base_url': 'https://ems.test', 'timeout': 5, 'start_method': 'POST',
+                               'token_env': 'SECRET_KEY'})
+        self.assertFalse(form.is_valid())
+        self.assertIn('token_env', form.errors)
+        b = RestBackend({'base_url': 'http://ems.example.test', 'token_env': 'PATCH_BACKEND_X', 'start_url': '/x',
+                         'timeout': 1})
+        os.environ['PATCH_BACKEND_X'] = 'secret'
+        try:
+            with self.assertRaisesMessage(BackendError, 'HTTPS'):
+                b.start(self.never, 'j')
+        finally:
+            del os.environ['PATCH_BACKEND_X']
 
 
 FAKE_PWSH = '''#!{python}
@@ -275,7 +330,8 @@ class PowerShellBackendTests(Base):
         self.script = os.path.join(self.root, 'backend.ps1')
         open(self.script, 'w').close()
         cfg = dict(dj_settings.PLUGINS_CONFIG)
-        cfg['netbox_patch_management'] = {**cfg.get('netbox_patch_management', {}), 'script_root': self.root}
+        cfg['netbox_patch_management'] = {**cfg.get('netbox_patch_management', {}), 'script_root': self.root,
+                                          'pwsh_path': self.pwsh}
         self.override = override_settings(PLUGINS_CONFIG=cfg)
         self.override.enable()
 
@@ -283,7 +339,7 @@ class PowerShellBackendTests(Base):
         self.override.disable()
 
     def test_contract(self):
-        b = LocalPowerShellBackend({'script': self.script, 'pwsh': self.pwsh, 'timeout': 10})
+        b = LocalPowerShellBackend({'script': self.script, 'pwsh': '/bin/sh', 'timeout': 10})  # UI value is ignored
         self.assertEqual(b.test(), 'fake')
         self.assertEqual(b.job_choices(), [('j1', 'Job 1')])
         self.assertEqual(b.start(self.never, 'j1'), f'x-{self.never.pk}')
@@ -293,7 +349,22 @@ class PowerShellBackendTests(Base):
             b.call('fail')
 
     def test_script_outside_root_rejected(self):
-        form = LocalConfigForm({'script': '/etc/passwd', 'pwsh': 'pwsh', 'timeout': 10})
+        form = LocalConfigForm({'script': '/etc/passwd', 'timeout': 10})
         self.assertFalse(form.is_valid())
         with self.assertRaises(BackendError):
-            LocalPowerShellBackend({'script': '/etc/passwd', 'pwsh': self.pwsh}).test()
+            LocalPowerShellBackend({'script': '/etc/passwd'}).test()
+        link = os.path.join(self.root, 'link.ps1')
+        os.symlink('/etc/passwd', link)  # symlink out of the root is resolved and rejected
+        self.assertFalse(LocalConfigForm({'script': link, 'timeout': 10}).is_valid())
+
+    def test_ssh_settings_reject_injection(self):
+        from .backends.powershell import SshConfigForm, SshPowerShellBackend
+        base = {'host': 'jump01', 'port': 22, 'user': 'svc', 'key_file': '/k', 'known_hosts_file': '/kh',
+                'remote_script': 'C:\\scripts\\patch.ps1', 'pwsh': 'pwsh', 'timeout': 10}
+        self.assertTrue(SshConfigForm(base).is_valid())
+        for field, value in (('host', '-oProxyCommand'), ('user', '-oX'), ('remote_script', 'x.ps1 -Command Stop-Computer'),
+                             ('key_file', 'relative')):
+            with self.subTest(field=field):
+                self.assertFalse(SshConfigForm({**base, field: value}).is_valid())
+                with self.assertRaises(BackendError):
+                    SshPowerShellBackend({**base, field: value}).command('test')

@@ -112,10 +112,23 @@ def get_backend():
     return cls(settings.backend_config) if cls else None
 
 
+def secret_env_prefix():
+    return get_plugin_config('netbox_patch_management', 'secret_env_prefix')
+
+
+def check_env_name(name):
+    """Only variables with the configured prefix may be read - otherwise a settings admin could send
+    any process secret (SECRET_KEY, DB password, ...) to an external host."""
+    prefix = secret_env_prefix()
+    if not name or not name.startswith(prefix) or not name.replace('_', '').isalnum():
+        raise BackendError(_('The environment variable must start with %(prefix)s') % {'prefix': prefix})
+    return name
+
+
 def env_secret(name):
     """Read a secret from the environment variable named in the config (never stored in the DB)."""
     import os
-    value = os.environ.get(name or '')
+    value = os.environ.get(check_env_name(name))
     if not value:
         raise BackendError(_('Environment variable %(name)s is not set') % {'name': name})
     return value

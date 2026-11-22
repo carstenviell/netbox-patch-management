@@ -137,6 +137,7 @@ class PlanningView(PermissionRequiredMixin, View):
 
     def get(self, request):
         form = forms.PlanningForm(request.GET or None)
+        form.fields['update_class'].queryset = UpdateClass.objects.restrict(request.user, 'view')
         rows, update_class = [], None
         if form.is_valid():
             update_class = form.cleaned_data['update_class']
@@ -207,16 +208,24 @@ class StartPatchView(PermissionRequiredMixin, View):
     template_name = 'netbox_patch_management/start.html'
 
     def _rows(self, backend, objs):
+        try:
+            jobs = dict(backend.job_choices())
+        except BackendError as exc:
+            return [{'obj': o, 'update_class': update_class_of(o), 'ok': False, 'reason': str(exc),
+                     'param': PARAM_FOR[type(o)]} for o in objs]
         rows = []
         for obj in objs:
             update_class = update_class_of(obj)
             ok, reason = backend.can_start(obj)
+            job = update_class.backend_job_ref if update_class else ''
             if is_locked(obj):
                 ok, reason = False, _('Patch lock')
-            elif update_class is None or not update_class.backend_job_ref:
+            elif not job:
                 ok, reason = False, _('Update class has no backend job')
+            elif jobs and job not in jobs:  # e.g. set via API to a job that does not exist (any more)
+                ok, reason = False, _('Job not found in the backend')
             rows.append({'obj': obj, 'update_class': update_class, 'ok': ok, 'reason': reason,
-                         'param': PARAM_FOR[type(obj)]})
+                         'job_label': jobs.get(job, job), 'param': PARAM_FOR[type(obj)]})
         return rows
 
     def dispatch(self, request, *args, **kwargs):
@@ -250,8 +259,15 @@ class StartPatchView(PermissionRequiredMixin, View):
 # Settings
 # ---------------------------------------------------------------------------
 
-class SettingsView(PermissionRequiredMixin, View):
+class SuperuserMixin(PermissionRequiredMixin):
+    """The backend settings define outbound URLs, scripts and hosts NetBox calls - superusers only."""
     permission_required = 'netbox_patch_management.change_patchsettings'
+
+    def has_permission(self):
+        return self.request.user.is_superuser and super().has_permission()
+
+
+class SettingsView(SuperuserMixin, View):
     template_name = 'netbox_patch_management/settings.html'
 
     def _forms(self, request, settings, data=None):
@@ -289,8 +305,7 @@ class SettingsView(PermissionRequiredMixin, View):
             'form': base, 'config_form': config, 'backend_cls': cls, 'settings': settings, 'unsaved': True})
 
 
-class TestBackendView(PermissionRequiredMixin, View):
-    permission_required = 'netbox_patch_management.change_patchsettings'
+class TestBackendView(SuperuserMixin, View):
 
     def post(self, request):
         backend = get_backend()

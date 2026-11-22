@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: netbox-patch-management\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-22 14:02+0100\n"
+"POT-Creation-Date: 2026-11-22 14:20+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,6 +18,11 @@ msgstr "Dieses Backend kann keine Jobs starten"
 
 msgid "Job status is not supported by this backend"
 msgstr "Dieses Backend liefert keinen Job-Status"
+
+#, fuzzy, python-format
+#| msgid "Environment variable %(name)s is not set"
+msgid "The environment variable must start with %(prefix)s"
+msgstr "Umgebungsvariable %(name)s ist nicht gesetzt"
 
 #, python-format
 msgid "Environment variable %(name)s is not set"
@@ -44,22 +49,15 @@ msgstr "kritisch"
 msgid "security"
 msgstr "Sicherheit"
 
-#| msgid "Record patch"
 msgid "Script path"
 msgstr "Patch erfassen"
 
 msgid "Absolute path below the configured script directory"
 msgstr "Absoluter Pfad unterhalb des konfigurierten Script-Verzeichnisses"
 
-msgid "pwsh executable"
-msgstr "pwsh-Programm"
-
 #, python-format
 msgid "The script must be located below %(root)s"
 msgstr "Das Script muss unterhalb von %(root)s liegen"
-
-msgid "Invalid characters"
-msgstr "Ungültige Zeichen"
 
 msgid "Host"
 msgstr "Host"
@@ -82,12 +80,14 @@ msgstr "known_hosts-Datei"
 msgid "Pinned host key; connections to unknown hosts are refused"
 msgstr "Gepinnter Host-Key; Verbindungen zu unbekannten Hosts werden abgelehnt"
 
-#| msgid "Record patch"
 msgid "Remote script path"
 msgstr "Patch erfassen"
 
 msgid "Remote pwsh executable"
 msgstr "pwsh-Programm auf dem Zielhost"
+
+msgid "Invalid characters"
+msgstr "Ungültige Zeichen"
 
 msgid "Absolute path required"
 msgstr "Absoluter Pfad erforderlich"
@@ -109,7 +109,8 @@ msgstr "Ungültige SSH-Einstellung: %(field)s"
 msgid "Key and known_hosts files must be absolute paths"
 msgstr "Key- und known_hosts-Datei müssen absolute Pfade sein"
 
-msgid "Jinja2 template; variables: obj, cf, job_ref, external_id"
+#| msgid "Jinja2 template; variables: obj, cf, job_ref, external_id"
+msgid "Jinja2 template; variables: obj, cf, job_ref, external_id. Every {{ ... }} value is URL-encoded in URLs and JSON-encoded in bodies."
 msgstr "Jinja2-Vorlage; Variablen: obj, cf, job_ref, external_id"
 
 msgid "Dotted path in the JSON response, e.g. data.0.id"
@@ -152,33 +153,27 @@ msgstr "Pfad der Job-ID"
 msgid "Job label path"
 msgstr "Pfad des Job-Namens"
 
-#| msgid "Started"
 msgid "Start method"
 msgstr "Gestartet"
 
-#| msgid "Start"
 msgid "Start URL"
 msgstr "Starten"
 
-#| msgid "Started"
 msgid "Start body"
 msgstr "Gestartet"
 
 msgid "Job instance ID path"
 msgstr "Pfad der Job-Instanz-ID"
 
-#| msgid "Status"
 msgid "Status URL"
 msgstr "Status"
 
-#| msgid "Status"
 msgid "Status path"
 msgstr "Status"
 
 msgid "Finished-at path"
 msgstr "Pfad des Endzeitpunkts"
 
-#| msgid "Status"
 msgid "Status mapping"
 msgstr "Status"
 
@@ -188,7 +183,6 @@ msgstr "Je Zeile \"rohwert=status\"; status ist succeeded, failed, cancelled ode
 msgid "Patch state URL (per object)"
 msgstr "URL für den Patch-Stand (je Objekt)"
 
-#| msgid "Last patched"
 msgid "Last-patched path"
 msgstr "Letztes Update"
 
@@ -205,6 +199,12 @@ msgstr "Pfad des Details"
 msgid "Template error: %(err)s"
 msgstr "Vorlagenfehler: %(err)s"
 
+msgid "The URL must stay below the base URL"
+msgstr "Die URL muss unterhalb der Basis-URL bleiben"
+
+msgid "The token is only sent via HTTPS"
+msgstr "Das Token wird nur über HTTPS gesendet"
+
 msgid "Response is not JSON"
 msgstr "Antwort ist kein JSON"
 
@@ -215,7 +215,6 @@ msgstr "%(n)d Jobs gefunden"
 msgid "Base URL reachable"
 msgstr "Basis-URL erreichbar"
 
-#| msgid "No patch backend configured."
 msgid "No start URL configured"
 msgstr "Kein Patch-Backend konfiguriert."
 
@@ -225,7 +224,6 @@ msgstr "Start-Body ist kein gültiges JSON"
 msgid "No job instance ID in response"
 msgstr "Keine Job-Instanz-ID in der Antwort"
 
-#| msgid "No patch backend configured."
 msgid "No status URL configured"
 msgstr "Kein Patch-Backend konfiguriert."
 
@@ -296,7 +294,6 @@ msgstr "Das Datum darf nicht in der Zukunft liegen."
 msgid "Endpoint-management system"
 msgstr "Endpoint-Management-System"
 
-#| msgid "No systems due."
 msgid "Non-compliant systems are due"
 msgstr "Keine fälligen Systeme."
 
@@ -376,19 +373,15 @@ msgstr "Patch-Protokolleintrag"
 msgid "patch log"
 msgstr "Patch-Protokoll"
 
-#| msgid "backend job"
 msgid "backend"
 msgstr "Backend-Job"
 
-#| msgid "Include systems not yet due"
 msgid "non-compliant systems are due"
 msgstr "Auch noch nicht fällige Systeme anzeigen"
 
-#| msgid "patch log"
 msgid "patch settings"
 msgstr "Patch-Protokoll"
 
-#| msgid "Patch planning"
 msgid "Patch settings"
 msgstr "Patch-Planung"
 
@@ -410,6 +403,13 @@ msgstr "Patch-Protokoll"
 msgid "Settings"
 msgstr "Einstellungen"
 
+#| msgid "The date must not be in the future."
+msgid "\"Last patched\" must not be in the future."
+msgstr "Das Datum darf nicht in der Zukunft liegen."
+
+msgid "\"Last patched\" can only be set via the patch log (Patch Management)."
+msgstr "\"Letztes Update\" kann nur über das Patch-Protokoll (Patch-Management) gesetzt werden."
+
 msgid "Object"
 msgstr "Objekt"
 
@@ -422,7 +422,6 @@ msgstr "nicht konform"
 msgid "unknown"
 msgstr "unbekannt"
 
-#| msgid "Last status"
 msgid "Last sync"
 msgstr "Letzter Status"
 
@@ -445,7 +444,6 @@ msgstr "Nächste Fälligkeit"
 msgid "now"
 msgstr "jetzt"
 
-#| msgid "status"
 msgid "EMS status"
 msgstr "Status"
 
@@ -592,6 +590,10 @@ msgstr "Abgewiesen (Update-Sperre): %(names)s"
 msgid "Update class has no backend job"
 msgstr "Update-Klasse hat keinen Backend-Job"
 
+#| msgid "not found in backend"
+msgid "Job not found in the backend"
+msgstr "im Backend nicht gefunden"
+
 msgid "No patch backend configured."
 msgstr "Kein Patch-Backend konfiguriert."
 
@@ -605,7 +607,6 @@ msgstr "Start von %(n)d Patch-Job(s) eingereiht."
 msgid "Settings saved."
 msgstr "Einstellungen gespeichert."
 
-#| msgid "No patch backend configured."
 msgid "No backend configured."
 msgstr "Kein Patch-Backend konfiguriert."
 

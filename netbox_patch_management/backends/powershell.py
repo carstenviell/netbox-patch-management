@@ -25,8 +25,8 @@ from netbox.plugins import get_plugin_config
 from . import BackendError, EmsReport, PatchBackend, TimeoutField, object_key, object_payload, parse_date, parse_datetime
 from ..models import PatchStatusChoices
 
-SAFE_REMOTE = re.compile(r'^[\w\-. :\\/]+$')   # remote script path / pwsh path: no shell metacharacters
-SAFE_HOST = re.compile(r'^[\w\-.]+$')
+SAFE_REMOTE = re.compile(r'^[\w][\w\-.:\\/]*$')  # remote paths: no spaces/shell metacharacters (no argument injection)
+SAFE_HOST = re.compile(r'^[A-Za-z0-9][\w\-.]*$')    # must not start with '-' (ssh option injection)
 
 
 def script_root():
@@ -36,7 +36,6 @@ def script_root():
 class LocalConfigForm(forms.Form):
     script = forms.CharField(label=_('Script path'),
                              help_text=_('Absolute path below the configured script directory'))
-    pwsh = forms.CharField(label=_('pwsh executable'), initial='pwsh')
     timeout = TimeoutField()
 
     def clean_script(self):
@@ -45,11 +44,6 @@ class LocalConfigForm(forms.Form):
         if os.path.commonpath([path, root]) != root:
             raise forms.ValidationError(_('The script must be located below %(root)s') % {'root': root})
         return path
-
-    def clean_pwsh(self):
-        if not SAFE_REMOTE.match(self.cleaned_data['pwsh']):
-            raise forms.ValidationError(_('Invalid characters'))
-        return self.cleaned_data['pwsh']
 
 
 class SshConfigForm(forms.Form):
@@ -142,7 +136,8 @@ class LocalPowerShellBackend(PowerShellBackend):
         root = script_root()
         if os.path.commonpath([script, root]) != root:  # re-check: settings could be edited in the DB
             raise BackendError(_('The script must be located below %(root)s') % {'root': root})
-        return [self.config.get('pwsh') or 'pwsh', '-NoProfile', '-NonInteractive', '-File', script, '-Action', action]
+        # ponytail: executable comes from PLUGINS_CONFIG only - a UI field would allow running any binary
+        return [get_plugin_config('netbox_patch_management', 'pwsh_path'), '-NoProfile', '-NonInteractive', '-File', script, '-Action', action]
 
 
 class SshPowerShellBackend(PowerShellBackend):

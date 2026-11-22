@@ -30,6 +30,8 @@ PLUGINS_CONFIG = {
         "status_interval_min": 10,                 # sync interval for job status and patch state
         "script_root": "/opt/netbox/patch-scripts", # local PowerShell scripts must live below this directory
         "extra_backends": [],                      # additional PatchBackend classes (dotted paths)
+        "secret_env_prefix": "PATCH_BACKEND_",     # tokens may only be read from env vars with this prefix
+        "pwsh_path": "pwsh",                       # local PowerShell executable (not editable in the UI)
     },
 }
 ```
@@ -42,7 +44,7 @@ Then run `manage.py migrate`. The plugin creates these custom fields on devices 
 | `patch_class` | object (update class) | Assignment to an update class |
 | `patch_interval_days` | integer | Overrides the class interval |
 | `patch_lock` | boolean | Excludes the system from patching |
-| `last_patched` | date (read-only in the UI) | Set by the patch log / the EMS |
+| `last_patched` | date (read-only) | Set by the patch log / the EMS. Changes via REST API, bulk edit or CSV import are rejected (HTTP 400); new objects may bring a past date (initial import) |
 
 Labels are created in the instance's `LANGUAGE_CODE`. Rename them in *Customization → Custom Fields* if needed.
 
@@ -63,9 +65,12 @@ If the script is not installed, the impact buttons are hidden.
 
 ## Endpoint-management systems (EMS)
 
-Choose the EMS under *Patch Management → Settings* (permission `change_patchsettings`; grant it to admins only,
-the settings define URLs and scripts that NetBox calls). **Secrets are never stored in the database** –
-settings only name environment variables or files. *Test connection* checks the configuration.
+Choose the EMS under *Patch Management → Settings* (**superusers only** – the settings define the URLs, hosts and
+scripts NetBox calls). **Secrets are never stored in the database** – settings only name environment variables
+(which must start with `PATCH_BACKEND_`) or files. *Test connection* checks the configuration.
+
+Before a job starts, its reference is checked against the backend's job list and the confirmation page shows the
+job name, so a job reference set via API cannot silently start an unexpected job.
 
 **The EMS is authoritative.** The sync job (every `status_interval_min` minutes)
 
@@ -82,9 +87,13 @@ Systems with a patch date from the EMS cannot be recorded manually. Systems the 
 | Backend | Use |
 |---|---|
 | baramundi | Requires [netbox-baramundi](https://github.com/carstenviell/netbox-baramundi) (connection settings and endpoint mapping live there). Requires **baramundi bConnect API v2**. |
-| REST API | Generic HTTP/JSON EMS: URL and body templates (Jinja2, sandboxed; variables `obj`, `cf`, `job_ref`, `external_id`), values via dotted JSON paths (`data.0.id`), status mapping `raw=succeeded|failed|cancelled|started`. Token from an environment variable. |
-| PowerShell | Local `pwsh` in the NetBox worker container (install PowerShell in your image), script below `script_root`. |
-| PowerShell (SSH) | Script on a remote host via OpenSSH, key file and pinned `known_hosts` file (unknown hosts are refused). |
+| REST API | Generic HTTP/JSON EMS: URL and body templates (Jinja2, sandboxed; variables `obj`, `cf`, `job_ref`, `external_id`), values via dotted JSON paths (`data.0.id`), status mapping `raw=succeeded|failed|cancelled|started`. Token from an environment variable, sent via HTTPS only. |
+| PowerShell | Local `pwsh` (`pwsh_path`) in the NetBox worker container (install PowerShell in your image), script below `script_root`. |
+| PowerShell (SSH) | Script on a remote host via OpenSSH, absolute key file and pinned `known_hosts` file (unknown hosts are refused). Remote paths must not contain spaces. |
+
+**REST templates are injection-safe by construction:** every `{{ ... }}` value is URL-encoded in URL templates
+and JSON-encoded in the body template. Write `{"host": {{ obj.name }}}` (no quotes around the expression).
+URL templates are paths below the base URL – requests never leave the configured origin.
 
 ### PowerShell contract
 

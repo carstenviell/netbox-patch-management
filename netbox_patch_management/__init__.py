@@ -9,7 +9,7 @@ class PatchManagementConfig(PluginConfig):
         'OS patch planning for devices and VMs: update classes with intervals, patch lock, '
         'due list with impact analysis, patch log, pluggable endpoint-management backends.'
     )
-    version = '0.2.0'
+    version = '0.2.1'
     author = 'Carsten Viell'
     base_url = 'patch-management'
     min_version = '4.7.0'
@@ -20,11 +20,15 @@ class PatchManagementConfig(PluginConfig):
         'script_root': '/opt/netbox/patch-scripts',
         # Additional PatchBackend subclasses (dotted paths) offered on the settings page.
         'extra_backends': [],
+        # Secrets (tokens) may only be read from environment variables with this prefix.
+        'secret_env_prefix': 'PATCH_BACKEND_',
+        # pwsh executable for the local PowerShell backend (deliberately not editable in the UI).
+        'pwsh_path': 'pwsh',
     }
 
     def ready(self):
         super().ready()
-        from . import jobs  # noqa: F401  (registers the system job)
+        from . import jobs, signals  # noqa: F401  (system job, last_patched guard)
         from .custom_fields import ensure_custom_fields
         post_migrate.connect(ensure_custom_fields, sender=self)
 
