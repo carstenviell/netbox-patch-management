@@ -13,31 +13,111 @@ NetBox plugin for **OS patch planning** of devices and virtual machines.
 - **Pluggable backends**: start patch jobs in an endpoint-management system and track their status
   (first backend: baramundi via [netbox-baramundi](https://github.com/carstenviell/netbox-baramundi), in progress)
 
-Requires NetBox ≥ 4.7.
+## Requirements
+
+- NetBox **4.7** or later (Python ≥ 3.10, as shipped with NetBox)
+- A running NetBox **background worker** (`netbox-rq` / `netbox-worker`): starting patch jobs and the
+  periodic sync run as background jobs
+- Optional: the *ImpactAnalyse* script from [netbox-abhaengigkeiten](https://github.com/carstenviell/netbox-abhaengigkeiten)
+  for the impact links
+- Optional: an endpoint-management system (see [below](#endpoint-management-systems-ems))
+
+The plugin is not published on PyPI – install it from the GitHub release archive (no `git` needed).
+Replace `v0.2.2` with the [release](https://github.com/carstenviell/netbox-patch-management/releases) you want.
 
 ## Installation
 
+### NetBox installed from source (systemd)
+
 ```bash
-pip install netbox-patch-management
+sudo /opt/netbox/venv/bin/pip install \
+  https://github.com/carstenviell/netbox-patch-management/archive/refs/tags/v0.2.2.tar.gz
+
+# keep the plugin when NetBox is upgraded (upgrade.sh reinstalls local_requirements.txt)
+echo "https://github.com/carstenviell/netbox-patch-management/archive/refs/tags/v0.2.2.tar.gz" | \
+  sudo tee -a /opt/netbox/local_requirements.txt
 ```
 
-`configuration.py`:
+Enable the plugin in `/opt/netbox/netbox/netbox/configuration.py`:
 
 ```python
-PLUGINS = ["netbox_patch_management"]
+PLUGINS = [
+    # ...
+    "netbox_patch_management",
+]
+
+# optional - these are the defaults
 PLUGINS_CONFIG = {
     "netbox_patch_management": {
-        "status_interval_min": 10,                 # sync interval for job status and patch state
+        "status_interval_min": 10,                  # sync interval for job status and patch state
         "script_root": "/opt/netbox/patch-scripts", # local PowerShell scripts must live below this directory
-        "extra_backends": [],                      # additional PatchBackend classes (dotted paths)
-        "secret_env_prefix": "PATCH_BACKEND_",     # tokens may only be read from env vars with this prefix
-        "pwsh_path": "pwsh",                       # local PowerShell executable (not editable in the UI)
+        "extra_backends": [],                       # additional PatchBackend classes (dotted paths)
+        "secret_env_prefix": "PATCH_BACKEND_",      # tokens may only be read from env vars with this prefix
+        "pwsh_path": "pwsh",                        # local PowerShell executable (not editable in the UI)
     },
 }
 ```
 
-Then run `manage.py migrate`. The plugin creates these custom fields on devices and VMs
-(group "Patch-Management"). Existing fields with the same name are never modified:
+Apply the migrations and restart **both** services (the worker registers the sync job at start):
+
+```bash
+cd /opt/netbox/netbox
+sudo /opt/netbox/venv/bin/python manage.py migrate
+sudo systemctl restart netbox netbox-rq
+```
+
+### netbox-docker
+
+`plugin_requirements.txt`:
+
+```text
+https://github.com/carstenviell/netbox-patch-management/archive/refs/tags/v0.2.2.tar.gz
+```
+
+`Dockerfile-Plugins`:
+
+```dockerfile
+FROM netboxcommunity/netbox:v4.7
+COPY ./plugin_requirements.txt /opt/netbox/
+RUN /usr/local/bin/uv pip install -r /opt/netbox/plugin_requirements.txt
+```
+
+Add `"netbox_patch_management"` to `PLUGINS` in `configuration/plugins.py`, let `docker-compose.override.yml`
+build `netbox`, `netbox-worker` and `netbox-housekeeping` from `Dockerfile-Plugins`, then:
+
+```bash
+docker compose build --no-cache && docker compose up -d
+```
+
+Migrations run automatically when the container starts.
+
+### After the installation
+
+1. **Check:** the menu *Patch Management* appears; *Customization → Custom Fields* lists the four fields below
+   (group "Patch-Management").
+2. **Permissions** (*Admin → Permissions*) for non-superusers:
+
+   | Task | Permission |
+   |---|---|
+   | View planning, update classes | `netbox_patch_management.view_updateclass` |
+   | Maintain update classes | `add/change/delete_updateclass` |
+   | Record patches | `netbox_patch_management.add_patchlog` + `change` on the devices/VMs |
+   | View the patch log | `netbox_patch_management.view_patchlog` |
+   | Start patch jobs in the EMS | `netbox_patch_management.start_patch_job` + `change` on the devices/VMs |
+   | Settings (EMS) | superusers only |
+3. **Secrets for an EMS** (e.g. a REST token) are read from environment variables starting with `PATCH_BACKEND_`.
+   Set them for **both** the web service and the worker (systemd: `systemctl edit netbox netbox-rq`
+   → `Environment=PATCH_BACKEND_TOKEN=...`; Docker: `env/netbox.env`, which both containers use).
+
+### Upgrade
+
+Install the new release archive (also update the line in `local_requirements.txt` / `plugin_requirements.txt`),
+then run `migrate` and restart `netbox` and `netbox-rq` (Docker: rebuild).
+
+### Custom fields
+
+The plugin creates these custom fields on devices and VMs (group "Patch-Management").
+Existing fields with the same name are never modified:
 
 | Field | Type | Purpose |
 |---|---|---|
@@ -47,6 +127,7 @@ Then run `manage.py migrate`. The plugin creates these custom fields on devices 
 | `last_patched` | date (read-only) | Set by the patch log / the EMS. Changes via REST API, bulk edit or CSV import are rejected (HTTP 400); new objects may bring a past date (initial import) |
 
 Labels are created in the instance's `LANGUAGE_CODE`. Rename them in *Customization → Custom Fields* if needed.
+The user interface is available in English and German (follows the language chosen in NetBox).
 
 ## Usage
 

@@ -19,10 +19,9 @@ msgstr "Dieses Backend kann keine Jobs starten"
 msgid "Job status is not supported by this backend"
 msgstr "Dieses Backend liefert keinen Job-Status"
 
-#, fuzzy, python-format
-#| msgid "Environment variable %(name)s is not set"
+#, python-format
 msgid "The environment variable must start with %(prefix)s"
-msgstr "Umgebungsvariable %(name)s ist nicht gesetzt"
+msgstr "Die Umgebungsvariable muss mit %(prefix)s beginnen"
 
 #, python-format
 msgid "Environment variable %(name)s is not set"
@@ -520,10 +519,9 @@ msgstr "Systeme"
 msgid "No systems selected (or no permission to change them)."
 msgstr "Keine Systeme ausgewählt (oder keine Berechtigung, sie zu ändern)."
 
-#, fuzzy, python-format
-#| msgid "Patch lock - will not be recorded:"
+#, python-format
 msgid "Patch date is reported by %(name)s - will not be recorded manually:"
-msgstr "Update-Sperre – wird nicht erfasst:"
+msgstr "Patch-Datum wird von %(name)s gemeldet – wird nicht manuell erfasst:"
 
 msgid "Patch lock - will not be recorded:"
 msgstr "Update-Sperre – wird nicht erfasst:"
@@ -582,10 +580,9 @@ msgstr "Patch für %(n)d System(e) erfasst."
 msgid "Refused (patch lock): %(names)s"
 msgstr "Abgewiesen (Update-Sperre): %(names)s"
 
-#, fuzzy, python-format
-#| msgid "Refused (patch lock): %(names)s"
+#, python-format
 msgid "Refused (patch date is reported by the EMS): %(names)s"
-msgstr "Abgewiesen (Update-Sperre): %(names)s"
+msgstr "Abgewiesen (Patch-Datum wird vom EMS gemeldet): %(names)s"
 
 msgid "Update class has no backend job"
 msgstr "Update-Klasse hat keinen Backend-Job"

@@ -7,6 +7,12 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Ve
 - baramundi-Backend am echten bMS verifizieren (Job-Start, ob `POST JobInstances` ohne `/Start` schon ausführt).
 - PowerShell lokal: `pwsh` ist im Test-Image nicht installiert, getestet nur mit Fake-Executable. SSH ohne Testhost ungetestet.
 
+## [0.2.2] – 2026-11-22
+### Behoben
+- Installationsanleitung: Das Plugin liegt nicht auf PyPI. Die Anleitung beschreibt jetzt die Installation aus dem GitHub-Release-Archiv (funktioniert ohne `git`, auch im netbox-docker-Image) für Source-Installationen (inkl. `local_requirements.txt` für Upgrades) und netbox-docker (`plugin_requirements.txt`), außerdem Worker-Neustart, Berechtigungen, Secrets für Web und Worker sowie Upgrade.
+- Deutsche Übersetzung fehlte nach der Installation: Die kompilierte `django.mo` wird jetzt mit ausgeliefert (vorher nur die `.po`, ohne `gettext` auf dem Zielsystem blieb die Oberfläche englisch). Ein Test stellt sicher, dass die `.mo` zur `.po` passt.
+- Drei Meldungen der EMS-Funktionen waren falsch übersetzt bzw. erschienen englisch (als „fuzzy“ markierte, automatisch geratene Übersetzungen).
+
 ## [0.2.1] – 2026-11-22
 ### Sicherheit
 Ergebnis des Security-Audits vom 2026-11-22 (Bericht lokal, nicht im Repo):

@@ -135,6 +135,20 @@ class ManualTests(Base):
         self.assertEqual(r.status_code, 200)  # invalid mapping is rejected
 
 
+class TranslationTests(TestCase):
+    def test_compiled_catalog_is_current(self):
+        """django.mo is shipped (no gettext needed on the target) - it must contain every translated msgid."""
+        import gettext
+        import re
+        base = os.path.join(os.path.dirname(__file__), 'locale', 'de', 'LC_MESSAGES')
+        po = open(os.path.join(base, 'django.po'), encoding='utf-8').read()
+        with open(os.path.join(base, 'django.mo'), 'rb') as f:
+            catalog = gettext.GNUTranslations(f)._catalog
+        missing = [m for m in re.findall(r'^msgid "(.+)"\nmsgstr "(?!")', po, re.M)
+                   if m.replace('\\"', '"') not in catalog]
+        self.assertEqual(missing, [], 'django.mo is outdated - run msgfmt (see CLAUDE.md)')
+
+
 class GuardTests(Base):
     def test_last_patched_only_via_plugin(self):
         from utilities.exceptions import AbortRequest
