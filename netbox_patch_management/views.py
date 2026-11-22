@@ -1,6 +1,7 @@
 from datetime import date
 from urllib.parse import urlencode
 
+from django.apps import apps
 from django.contrib import messages
 from django.contrib.auth.mixins import PermissionRequiredMixin
 from django.contrib.contenttypes.models import ContentType
@@ -11,7 +12,6 @@ from django.utils.translation import gettext_lazy as _l
 from django.views import View
 
 from dcim.models import Device
-from extras.models import Script
 from netbox.ui import layout
 from netbox.ui.panels import CommentsPanel, ObjectAttributesPanel, ObjectsTablePanel
 from netbox.ui import attrs
@@ -28,13 +28,16 @@ from .jobs import StartPatchJob
 from .logic import is_ems_managed, is_locked, plannable_objects, record_patch, update_class_of
 from .models import PatchLog, PatchSettings, UpdateClass
 
-IMPACT_SCRIPT = 'ImpactAnalyse'          # netbox-abhaengigkeiten; field names are an interface
-PARAM_FOR = {Device: 'devices', VirtualMachine: 'vms'}
+# Parameter names = model names, shared with netbox-dependencies' impact analysis (?device=..&virtualmachine=..)
+PARAM_FOR = {Device: 'device', VirtualMachine: 'virtualmachine'}
+IMPACT_SCENARIO = 'maintenance'
 
 
 def impact_base_url():
-    script = Script.objects.filter(name=IMPACT_SCRIPT).first()
-    return reverse('extras:script', args=[script.pk]) if script else None
+    """Impact analysis of the netbox-dependencies plugin, if installed (interface, see README)."""
+    if not apps.is_installed('netbox_dependencies'):
+        return None
+    return reverse('plugins:netbox_dependencies:impact')
 
 
 def impact_url(objs, base=None):
@@ -43,12 +46,12 @@ def impact_url(objs, base=None):
     if not base:
         return None
     # ponytail: GET link, ~1000 objects before URL length limits; switch to POST if classes get that big
-    params = [('szenario', 'wartung')] + [(PARAM_FOR[type(o)], o.pk) for o in objs]
+    params = [('scenario', IMPACT_SCENARIO)] + [(PARAM_FOR[type(o)], o.pk) for o in objs]
     return f'{base}?{urlencode(params)}'
 
 
 def selected_objects(request, action):
-    """Devices/VMs from ?devices=..&vms=.., restricted to the user's permission."""
+    """Devices/VMs from ?device=..&virtualmachine=.., restricted to the user's permission."""
     data = request.POST if request.method == 'POST' else request.GET
     objs = []
     for model, param in PARAM_FOR.items():

@@ -26,6 +26,16 @@ TODAY = date(2026, 11, 22)
 LOG = logging.getLogger('test')
 
 
+def grant(user, model, actions, constraints=None):
+    """NetBox evaluates permissions via ObjectPermission only (Django user_permissions are ignored)."""
+    from django.contrib.contenttypes.models import ContentType
+    from users.models import ObjectPermission
+    perm = ObjectPermission.objects.create(name=f'test {model.__name__} {actions}', actions=actions,
+                                           constraints=constraints)
+    perm.object_types.add(ContentType.objects.get_for_model(model))
+    perm.users.add(user)
+
+
 class FakeBackend(PatchBackend):
     """Proves the core works with any backend implementing the interface."""
     key = 'fake'
@@ -101,7 +111,7 @@ class ManualTests(Base):
         self.client.force_login(admin)
         for url in ('/plugins/patch-management/planning/?update_class=%d&day=%s' % (self.cls.pk, TODAY),
                     '/plugins/patch-management/update-classes/', f'/plugins/patch-management/update-classes/{self.cls.pk}/',
-                    '/plugins/patch-management/log/', f'/plugins/patch-management/record/?devices={self.never.pk}',
+                    '/plugins/patch-management/log/', f'/plugins/patch-management/record/?device={self.never.pk}',
                     '/plugins/patch-management/settings/', '/plugins/patch-management/settings/?backend=rest',
                     '/plugins/patch-management/settings/?backend=pwsh_ssh',
                     self.never.get_absolute_url(), '/api/plugins/patch-management/update-classes/'):
@@ -109,13 +119,14 @@ class ManualTests(Base):
                 self.assertEqual(self.client.get(url).status_code, 200)
         r = self.client.get('/plugins/patch-management/planning/?update_class=%d' % self.cls.pk)  # no date -> today
         self.assertContains(r, '>never<')
+        self.assertContains(r, f'/plugins/dependencies/impact/?scenario=maintenance&amp;device={self.never.pk}')
         self.assertNotContains(r, '>locked<')
 
     def test_record_view_post(self):
         admin = User.objects.create(username='admin_p', is_superuser=True)
         self.client.force_login(admin)
         r = self.client.post('/plugins/patch-management/record/', {
-            'devices': [self.never.pk, self.locked.pk], 'day': TODAY.isoformat(), 'comment': 'done'})
+            'device': [self.never.pk, self.locked.pk], 'day': TODAY.isoformat(), 'comment': 'done'})
         self.assertEqual(r.status_code, 302)
         self.assertEqual(PatchLog.objects.filter(object_id__in=[self.never.pk, self.locked.pk]).count(), 1)
 
@@ -147,6 +158,7 @@ class TranslationTests(TestCase):
         missing = [m for m in re.findall(r'^msgid "(.+)"\nmsgstr "(?!")', po, re.M)
                    if m.replace('\\"', '"') not in catalog]
         self.assertEqual(missing, [], 'django.mo is outdated - run msgfmt (see CLAUDE.md)')
+        self.assertEqual(re.findall(r'^#, .*fuzzy.*\n(?:#\|.*\n)*msgid "(.*)"', po, re.M), [], 'fuzzy (guessed) translations - fix them')
 
 
 class GuardTests(Base):
@@ -163,11 +175,11 @@ class GuardTests(Base):
         dev.save()
 
     def test_settings_superuser_only(self):
-        from django.contrib.auth.models import Permission
         user = User.objects.create(username='settings_admin')
-        user.user_permissions.add(Permission.objects.get(codename='change_patchsettings'))
+        grant(user, PatchSettings, ['view', 'change'])
+        self.assertTrue(user.has_perm('netbox_patch_management.change_patchsettings'))  # has the permission ...
         self.client.force_login(user)
-        self.assertEqual(self.client.get('/plugins/patch-management/settings/').status_code, 403)
+        self.assertEqual(self.client.get('/plugins/patch-management/settings/').status_code, 403)  # ... but no superuser
 
 
 class EmsTests(Base):

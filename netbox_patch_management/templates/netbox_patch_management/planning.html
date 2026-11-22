@@ -16,7 +16,7 @@
   {% if update_class %}
     {# One GET form; each button sends the selected devices/vms to its target. Record/start show a POST confirmation page. #}
     <form method="get" class="card">
-      <input type="hidden" name="szenario" value="wartung">
+      <input type="hidden" name="scenario" value="maintenance">
       <input type="hidden" name="return_url" value="{{ return_url }}">
       <h2 class="card-header">
         {{ update_class }}

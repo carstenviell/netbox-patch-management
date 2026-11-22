@@ -7,7 +7,7 @@
   <form method="post" class="object-edit mt-3">
     {% csrf_token %}
     <input type="hidden" name="return_url" value="{{ return_url }}">
-    {% for o in objs %}<input type="hidden" name="{% if o|meta:'model_name' == 'device' %}devices{% else %}vms{% endif %}" value="{{ o.pk }}">{% endfor %}
+    {% for o in objs %}<input type="hidden" name="{{ o|meta:'model_name' }}" value="{{ o.pk }}">{% endfor %}
     <div class="card mb-3">
       <h2 class="card-header">{% trans "Systems" %}</h2>
       <div class="card-body">

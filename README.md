@@ -1,29 +1,33 @@
+**English** | [Deutsch](README.de.md)
+
 # NetBox Patch Management
 
-NetBox plugin for **OS patch planning** of devices and virtual machines.
+[NetBox](https://github.com/netbox-community/netbox) plugin for **OS patch planning** of devices and virtual machines.
+
+## Features
 
 - **Update classes** with a patch interval (e.g. "Servers monthly" = 30 days), optionally overridden per object
 - **Patch lock** per object: locked systems never appear in planning, impact analysis or job starts
 - **Planning view**: pick a class and see every due system, most overdue first
-- **Impact analysis**: one click opens the *ImpactAnalyse* script from
-  [netbox-abhaengigkeiten](https://github.com/carstenviell/netbox-abhaengigkeiten) in the
+- **Impact analysis**: one click opens the impact analysis of
+  [netbox-dependencies](https://github.com/carstenviell/netbox-dependencies) in the
   maintenance scenario, with the selected systems preselected
 - **Patch log**: every recorded patch (date, user, comment, source, status) - filterable and exportable;
   `last_patched` is only ever set through the log, and changes appear in the NetBox changelog
 - **Pluggable backends**: start patch jobs in an endpoint-management system and track their status
-  (first backend: baramundi via [netbox-baramundi](https://github.com/carstenviell/netbox-baramundi), in progress)
+  (built in: REST API, PowerShell local/SSH; baramundi via the plugin netbox-baramundi – not published yet)
 
 ## Requirements
 
 - NetBox **4.7** or later (Python ≥ 3.10, as shipped with NetBox)
 - A running NetBox **background worker** (`netbox-rq` / `netbox-worker`): starting patch jobs and the
   periodic sync run as background jobs
-- Optional: the *ImpactAnalyse* script from [netbox-abhaengigkeiten](https://github.com/carstenviell/netbox-abhaengigkeiten)
+- Optional: the plugin [netbox-dependencies](https://github.com/carstenviell/netbox-dependencies) ≥ 2.0
   for the impact links
 - Optional: an endpoint-management system (see [below](#endpoint-management-systems-ems))
 
 The plugin is not published on PyPI – install it from the GitHub release archive (no `git` needed).
-Replace `v0.2.2` with the [release](https://github.com/carstenviell/netbox-patch-management/releases) you want.
+Replace `v0.3.0` with the [release](https://github.com/carstenviell/netbox-patch-management/releases) you want.
 
 ## Installation
 
@@ -31,10 +35,10 @@ Replace `v0.2.2` with the [release](https://github.com/carstenviell/netbox-patch
 
 ```bash
 sudo /opt/netbox/venv/bin/pip install \
-  https://github.com/carstenviell/netbox-patch-management/archive/refs/tags/v0.2.2.tar.gz
+  https://github.com/carstenviell/netbox-patch-management/archive/refs/tags/v0.3.0.tar.gz
 
 # keep the plugin when NetBox is upgraded (upgrade.sh reinstalls local_requirements.txt)
-echo "https://github.com/carstenviell/netbox-patch-management/archive/refs/tags/v0.2.2.tar.gz" | \
+echo "https://github.com/carstenviell/netbox-patch-management/archive/refs/tags/v0.3.0.tar.gz" | \
   sudo tee -a /opt/netbox/local_requirements.txt
 ```
 
@@ -71,7 +75,7 @@ sudo systemctl restart netbox netbox-rq
 `plugin_requirements.txt`:
 
 ```text
-https://github.com/carstenviell/netbox-patch-management/archive/refs/tags/v0.2.2.tar.gz
+https://github.com/carstenviell/netbox-patch-management/archive/refs/tags/v0.3.0.tar.gz
 ```
 
 `Dockerfile-Plugins`:
@@ -127,7 +131,6 @@ Existing fields with the same name are never modified:
 | `last_patched` | date (read-only) | Set by the patch log / the EMS. Changes via REST API, bulk edit or CSV import are rejected (HTTP 400); new objects may bring a past date (initial import) |
 
 Labels are created in the instance's `LANGUAGE_CODE`. Rename them in *Customization → Custom Fields* if needed.
-The user interface is available in English and German (follows the language chosen in NetBox).
 
 ## Usage
 
@@ -139,10 +142,10 @@ The user interface is available in English and German (follows the language chos
    - **Start via &lt;EMS&gt;**: only with a configured backend and the permission `start_patch_job`
 4. Device/VM detail pages show a *Patch Management* panel with due date, lock, EMS status, latest log entries and actions.
 
-### Interface to netbox-abhaengigkeiten
+### Interface to netbox-dependencies
 
-The impact link targets the script named `ImpactAnalyse` and its fields `szenario`, `devices`, `vms`.
-If the script is not installed, the impact buttons are hidden.
+The impact link opens `/plugins/dependencies/impact/?scenario=maintenance&device=<id>&virtualmachine=<id>`.
+If netbox-dependencies is not installed, the impact buttons are hidden.
 
 ## Endpoint-management systems (EMS)
 
@@ -167,7 +170,7 @@ Systems with a patch date from the EMS cannot be recorded manually. Systems the 
 
 | Backend | Use |
 |---|---|
-| baramundi | Requires [netbox-baramundi](https://github.com/carstenviell/netbox-baramundi) (connection settings and endpoint mapping live there). Requires **baramundi bConnect API v2**. |
+| baramundi | Requires the plugin netbox-baramundi (not published yet; connection settings and endpoint mapping live there). Requires **baramundi bConnect API v2**. |
 | REST API | Generic HTTP/JSON EMS: URL and body templates (Jinja2, sandboxed; variables `obj`, `cf`, `job_ref`, `external_id`), values via dotted JSON paths (`data.0.id`), status mapping `raw=succeeded|failed|cancelled|started`. Token from an environment variable, sent via HTTPS only. |
 | PowerShell | Local `pwsh` (`pwsh_path`) in the NetBox worker container (install PowerShell in your image), script below `script_root`. |
 | PowerShell (SSH) | Script on a remote host via OpenSSH, absolute key file and pinned `known_hosts` file (unknown hosts are refused). Remote paths must not contain spaces. |
@@ -200,6 +203,11 @@ A non-zero exit code is an error (stderr is shown). See [`examples/patch-backend
 Subclass `netbox_patch_management.backends.PatchBackend` (`key`, `label`, `config_form`, `test`, `job_choices`,
 `can_start`, `start`, `status`, `patch_state`) and add it to `extra_backends`.
 
+## Language
+
+The user interface is English and ships with a German translation. It follows the language the user selected in
+NetBox (*Profile → Preferences → Language*); languages without a translation fall back to English.
+
 ## License
 
-Apache-2.0
+[Apache License 2.0](LICENSE)

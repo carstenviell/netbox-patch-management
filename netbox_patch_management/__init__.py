@@ -9,7 +9,7 @@ class PatchManagementConfig(PluginConfig):
         'OS patch planning for devices and VMs: update classes with intervals, patch lock, '
         'due list with impact analysis, patch log, pluggable endpoint-management backends.'
     )
-    version = '0.2.2'
+    version = '0.3.0'
     author = 'Carsten Viell'
     base_url = 'patch-management'
     min_version = '4.7.0'
