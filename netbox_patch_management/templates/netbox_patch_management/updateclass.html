@@ -1,0 +1,7 @@
+{% extends 'generic/object.html' %}
+{% load i18n %}
+{% block extra_controls %}
+  <a href="{% url 'plugins:netbox_patch_management:planning' %}?update_class={{ object.pk }}" class="btn btn-primary">
+    <i class="mdi mdi-calendar-check"></i> {% trans "Open planning" %}
+  </a>
+{% endblock %}

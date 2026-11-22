@@ -1,0 +1,49 @@
+{% load i18n helpers %}
+<div class="card">
+  <h2 class="card-header">{% trans "Patch Management" %}</h2>
+  <table class="table table-hover attr-table">
+    <tr>
+      <th scope="row">{% trans "Update class" %}</th>
+      <td>{% if update_class %}<a href="{{ update_class.get_absolute_url }}">{{ update_class }}</a>{% else %}{{ ''|placeholder }}{% endif %}</td>
+    </tr>
+    <tr>
+      <th scope="row">{% trans "Interval" %}</th>
+      <td>{% if interval %}{% blocktrans with n=interval %}{{ n }} days{% endblocktrans %}{% else %}{{ ''|placeholder }}{% endif %}</td>
+    </tr>
+    <tr>
+      <th scope="row">{% trans "Last patched" %}</th>
+      <td>{{ last|default:_("never") }}</td>
+    </tr>
+    <tr>
+      <th scope="row">{% trans "Next due" %}</th>
+      <td>{% if locked %}{{ ''|placeholder }}{% elif update_class %}{{ due|default:_("now") }}{% else %}{{ ''|placeholder }}{% endif %}</td>
+    </tr>
+    <tr>
+      <th scope="row">{% trans "Patch lock" %}</th>
+      <td>{% if locked %}<span class="badge text-bg-warning">{% trans "Locked" %}</span>{% else %}{% trans "No" %}{% endif %}</td>
+    </tr>
+  </table>
+  {% if logs %}
+    <table class="table table-sm mb-0">
+      <thead><tr><th>{% trans "Date" %}</th><th>{% trans "Status" %}</th><th>{% trans "Source" %}</th><th>{% trans "User" %}</th></tr></thead>
+      {% for log in logs %}
+        <tr>
+          <td>{{ log.date }}</td>
+          <td><span class="badge text-bg-{{ log.get_status_color }}">{{ log.get_status_display }}</span></td>
+          <td>{{ log.source }}</td>
+          <td>{{ log.user_name|placeholder }}</td>
+        </tr>
+      {% endfor %}
+    </table>
+  {% endif %}
+  <div class="card-footer d-flex flex-wrap gap-1 justify-content-end">
+    <a href="{{ log_url }}" class="btn btn-sm btn-outline-secondary">{% trans "Patch log" %}</a>
+    {% if impact_url %}<a href="{{ impact_url }}" class="btn btn-sm btn-outline-primary">{% trans "Maintenance impact" %}</a>{% endif %}
+    {% if can_record %}<a href="{{ record_url }}" class="btn btn-sm btn-primary">{% trans "Record patch" %}</a>{% endif %}
+    {% if can_start %}
+      <a href="{{ start_url }}" class="btn btn-sm btn-warning">{% blocktrans with name=backend.label %}Start via {{ name }}{% endblocktrans %}</a>
+    {% elif backend and start_reason %}
+      <span class="text-muted small align-self-center" title="{{ start_reason }}">{% blocktrans with name=backend.label %}{{ name }}: not ready{% endblocktrans %}</span>
+    {% endif %}
+  </div>
+</div>

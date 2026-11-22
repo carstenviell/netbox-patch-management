@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "netbox-patch-management"
+version = "0.1.0"
+description = "NetBox plugin for OS patch planning: update classes with intervals, patch lock, due list with impact analysis, patch log, and pluggable endpoint-management backends (e.g. baramundi)."
+authors = [{ name = "Carsten Viell" }]
+license = { text = "Apache-2.0" }
+requires-python = ">=3.10"
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/carstenviell/netbox-patch-management"
+Repository = "https://github.com/carstenviell/netbox-patch-management"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["netbox_patch_management*"]
+
+[tool.setuptools.package-data]
+"netbox_patch_management" = ["templates/**/*", "locale/**/*"]
+
+[tool.setuptools]
+include-package-data = true

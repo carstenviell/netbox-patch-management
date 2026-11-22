@@ -1,0 +1,82 @@
+{% extends 'generic/_base.html' %}
+{% load i18n form_helpers helpers %}
+
+{% block title %}{% trans "Patch planning" %}{% endblock %}
+
+{% block content %}
+  <form method="get" class="card mb-3">
+    <div class="card-body row g-3 align-items-end">
+      <div class="col-md-4">{% render_field form.update_class %}</div>
+      <div class="col-md-3">{% render_field form.day %}</div>
+      <div class="col-md-3">{% render_field form.show_all %}</div>
+      <div class="col-md-2 text-end"><button type="submit" class="btn btn-primary">{% trans "Show" %}</button></div>
+    </div>
+  </form>
+
+  {% if update_class %}
+    {# One GET form; each button sends the selected devices/vms to its target. Record/start show a POST confirmation page. #}
+    <form method="get" class="card">
+      <input type="hidden" name="szenario" value="wartung">
+      <input type="hidden" name="return_url" value="{{ return_url }}">
+      <h2 class="card-header">
+        {{ update_class }}
+        <small class="text-muted">
+          {% blocktrans with n=update_class.interval_days %}every {{ n }} days{% endblocktrans %}
+          {% if update_class.maintenance_window %} · {{ update_class.maintenance_window }}{% endif %}
+        </small>
+      </h2>
+      {% if rows %}
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead>
+              <tr>
+                <th><input type="checkbox" class="form-check-input" onclick="for (const c of this.closest('table').querySelectorAll('tbody input[type=checkbox]')) c.checked = this.checked;"></th>
+                <th>{% trans "System" %}</th>
+                <th>{% trans "Type" %}</th>
+                <th>{% trans "Last patched" %}</th>
+                <th>{% trans "Interval" %}</th>
+                <th>{% trans "Due" %}</th>
+                {% if backend %}<th>{{ backend.label }}</th>{% endif %}
+                <th>{% trans "Last status" %}</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in rows %}
+                <tr>
+                  <td><input type="checkbox" class="form-check-input" name="{{ r.param }}" value="{{ r.obj.pk }}"></td>
+                  <td><a href="{{ r.obj.get_absolute_url }}">{{ r.obj }}</a></td>
+                  <td>{{ r.obj|meta:"verbose_name"|bettertitle }}</td>
+                  <td>{{ r.last|default:_("never") }}</td>
+                  <td>{{ r.interval }}</td>
+                  <td>
+                    {% if r.overdue_days is None %}<span class="badge text-bg-danger">{% trans "now" %}</span>
+                    {% elif r.overdue_days > 0 %}<span class="badge text-bg-danger">{% blocktrans with n=r.overdue_days %}{{ n }} days overdue{% endblocktrans %}</span>
+                    {% elif r.overdue_days == 0 %}<span class="badge text-bg-warning">{% trans "today" %}</span>
+                    {% else %}{{ r.due }}{% endif %}
+                  </td>
+                  {% if backend %}<td>{% if r.ready %}<i class="mdi mdi-check text-success"></i>{% else %}<span class="text-muted small" title="{{ r.reason }}"><i class="mdi mdi-close text-danger"></i> {{ r.reason }}</span>{% endif %}</td>{% endif %}
+                  <td>{% if r.last_log %}<span class="badge text-bg-{{ r.last_log.get_status_color }}">{{ r.last_log.get_status_display }}</span> {{ r.last_log.date }}{% else %}{{ ''|placeholder }}{% endif %}</td>
+                  <td class="text-end">{% if r.impact_url %}<a href="{{ r.impact_url }}" class="btn btn-sm btn-outline-primary">{% trans "Impact" %}</a>{% endif %}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <div class="card-footer d-flex flex-wrap gap-2 justify-content-end">
+          {% if impact_base_url %}
+            <button type="submit" formaction="{{ impact_base_url }}" class="btn btn-outline-primary">{% trans "Impact of selection" %}</button>
+          {% endif %}
+          {% if can_record %}
+            <button type="submit" formaction="{% url 'plugins:netbox_patch_management:record' %}" class="btn btn-primary">{% trans "Record as patched" %}</button>
+          {% endif %}
+          {% if can_start %}
+            <button type="submit" formaction="{% url 'plugins:netbox_patch_management:start' %}" class="btn btn-warning">{% blocktrans with name=backend.label %}Start via {{ name }}{% endblocktrans %}</button>
+          {% endif %}
+        </div>
+      {% else %}
+        <div class="card-body text-muted">{% trans "No systems due." %}</div>
+      {% endif %}
+    </form>
+  {% endif %}
+{% endblock %}

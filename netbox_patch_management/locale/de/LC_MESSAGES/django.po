@@ -1,0 +1,315 @@
+# German translation for netbox-patch-management.
+msgid ""
+msgstr ""
+"Project-Id-Version: netbox-patch-management\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-11-22 13:26+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: de\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "Update class"
+msgstr "Update-Klasse"
+
+msgid "Patch interval (days)"
+msgstr "Patch-Intervall (Tage)"
+
+msgid "Overrides the interval of the update class"
+msgstr "Überschreibt das Intervall der Update-Klasse"
+
+msgid "Patch lock"
+msgstr "Update-Sperre"
+
+msgid "Locked systems are hidden from patch planning and cannot be patched"
+msgstr "Gesperrte Systeme werden in der Planung ausgeblendet und können nicht gepatcht werden"
+"Gesperrte Systeme werden in der Planung ausgeblendet und können nicht "
+"gepatcht werden"
+
+msgid "Last patched"
+msgstr "Letztes Update"
+
+msgid "Set only via the patch log"
+msgstr "Wird nur über das Patch-Protokoll gesetzt"
+
+msgid "not found in backend"
+msgstr "im Backend nicht gefunden"
+
+msgid "Backend job"
+msgstr "Backend-Job"
+
+msgid "Search"
+msgstr "Suche"
+
+msgid "Status"
+msgstr "Status"
+
+msgid "Source"
+msgstr "Quelle"
+
+msgid "From"
+msgstr "Von"
+
+msgid "Until"
+msgstr "Bis"
+
+msgid "Reference date"
+msgstr "Stichtag"
+
+msgid "Include systems not yet due"
+msgstr "Auch noch nicht fällige Systeme anzeigen"
+
+msgid "Patched on"
+msgstr "Gepatcht am"
+
+msgid "Comment"
+msgstr "Kommentar"
+
+msgid "What was done (e.g. OS updates, reboot)"
+msgstr "Was wurde gemacht (z. B. OS-Updates, Neustart)"
+
+msgid "The date must not be in the future."
+msgstr "Das Datum darf nicht in der Zukunft liegen."
+
+msgid "Started"
+msgstr "Gestartet"
+
+msgid "Succeeded"
+msgstr "Erfolgreich"
+
+msgid "Failed"
+msgstr "Fehlgeschlagen"
+
+msgid "Cancelled"
+msgstr "Abgebrochen"
+
+msgid "name"
+msgstr "Name"
+
+msgid "interval (days)"
+msgstr "Intervall (Tage)"
+
+msgid "maintenance window"
+msgstr "Wartungsfenster"
+
+msgid "backend job"
+msgstr "Backend-Job"
+
+msgid ""
+"Job reference in the endpoint-management system (e.g. baramundi job "
+"definition)"
+msgstr "Job-Referenz im Endpoint-Management-System (z. B. baramundi-Job-Definition)"
+"Job-Referenz im Endpoint-Management-System (z. B. baramundi-Job-Definition)"
+
+msgid "description"
+msgstr "Beschreibung"
+
+msgid "comments"
+msgstr "Kommentare"
+
+msgid "update class"
+msgstr "Update-Klasse"
+
+msgid "update classes"
+msgstr "Update-Klassen"
+
+msgid "date"
+msgstr "Datum"
+
+msgid "source"
+msgstr "Quelle"
+
+msgid "status"
+msgstr "Status"
+
+msgid "raw status"
+msgstr "Rohstatus"
+
+msgid "external ID"
+msgstr "Externe ID"
+
+msgid "comment"
+msgstr "Kommentar"
+
+msgid "user"
+msgstr "Benutzer"
+
+msgid "patch log entry"
+msgstr "Patch-Protokolleintrag"
+
+msgid "patch log"
+msgstr "Patch-Protokoll"
+
+msgid "Patch Management"
+msgstr "Patch-Management"
+
+msgid "Planning"
+msgstr "Planung"
+
+msgid "Update classes"
+msgstr "Update-Klassen"
+
+msgid "Add"
+msgstr "Hinzufügen"
+
+msgid "Patch log"
+msgstr "Patch-Protokoll"
+
+msgid "Object"
+msgstr "Objekt"
+
+msgid "Interval"
+msgstr "Intervall"
+
+#, python-format
+msgid "%(n)s days"
+msgstr "%(n)s Tage"
+
+msgid "never"
+msgstr "nie"
+
+msgid "Next due"
+msgstr "Nächste Fälligkeit"
+
+msgid "now"
+msgstr "jetzt"
+
+msgid "Locked"
+msgstr "Gesperrt"
+
+msgid "No"
+msgstr "Nein"
+
+msgid "Date"
+msgstr "Datum"
+
+msgid "User"
+msgstr "Benutzer"
+
+msgid "Maintenance impact"
+msgstr "Wartungs-Impact"
+
+msgid "Record patch"
+msgstr "Patch erfassen"
+
+#, python-format
+msgid "Start via %(name)s"
+msgstr "Über %(name)s starten"
+
+#, python-format
+msgid "%(name)s: not ready"
+msgstr "%(name)s: nicht bereit"
+
+msgid "Patch planning"
+msgstr "Patch-Planung"
+
+msgid "Show"
+msgstr "Anzeigen"
+
+#, python-format
+msgid "every %(n)s days"
+msgstr "alle %(n)s Tage"
+
+msgid "System"
+msgstr "System"
+
+msgid "Type"
+msgstr "Typ"
+
+msgid "Due"
+msgstr "Fällig"
+
+msgid "Last status"
+msgstr "Letzter Status"
+
+#, python-format
+msgid "%(n)s days overdue"
+msgstr "%(n)s Tage überfällig"
+
+msgid "today"
+msgstr "heute"
+
+msgid "Impact"
+msgstr "Impact"
+
+msgid "Impact of selection"
+msgstr "Impact der Auswahl"
+
+msgid "Record as patched"
+msgstr "Als gepatcht erfassen"
+
+msgid "No systems due."
+msgstr "Keine fälligen Systeme."
+
+msgid "Systems"
+msgstr "Systeme"
+
+msgid "No systems selected (or no permission to change them)."
+msgstr "Keine Systeme ausgewählt (oder keine Berechtigung, sie zu ändern)."
+
+msgid "Patch lock - will not be recorded:"
+msgstr "Update-Sperre – wird nicht erfasst:"
+
+msgid "Cancel"
+msgstr "Abbrechen"
+
+msgid "Record"
+msgstr "Erfassen"
+
+#, python-format
+msgid "Start patch jobs via %(name)s"
+msgstr "Patch-Jobs über %(name)s starten"
+
+msgid "Job"
+msgstr "Job"
+
+msgid "Ready"
+msgstr "Bereit"
+
+#, python-format
+msgid ""
+"%(n)s job will be started in %(name)s. Systems that are not ready are "
+"skipped."
+msgid_plural ""
+"%(n)s jobs will be started in %(name)s. Systems that are not ready are "
+"skipped."
+msgstr[0] ""
+"%(n)s Job wird in %(name)s gestartet. Nicht bereite Systeme werden "
+"übersprungen."
+msgstr[1] ""
+"%(n)s Jobs werden in %(name)s gestartet. Nicht bereite Systeme werden "
+"übersprungen."
+
+msgid "Start"
+msgstr "Starten"
+
+msgid "Open planning"
+msgstr "Planung öffnen"
+
+msgid "No systems selected."
+msgstr "Keine Systeme ausgewählt."
+
+#, python-format
+msgid "Patch recorded for %(n)d system(s)."
+msgstr "Patch für %(n)d System(e) erfasst."
+
+#, python-format
+msgid "Refused (patch lock): %(names)s"
+msgstr "Abgewiesen (Update-Sperre): %(names)s"
+
+msgid "Update class has no backend job"
+msgstr "Update-Klasse hat keinen Backend-Job"
+
+msgid "No patch backend configured."
+msgstr "Kein Patch-Backend konfiguriert."
+
+msgid "None of the selected systems can be started."
+msgstr "Keines der ausgewählten Systeme kann gestartet werden."
+
+#, python-format
+msgid "Start of %(n)d patch job(s) enqueued."
+msgstr "Start von %(n)d Patch-Job(s) eingereiht."

@@ -1,0 +1,16 @@
+.DS_Store
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+
+.claude/
+*.mo
+
+CLAUDE.md
+INTERN.md
+
+# Interne Security-Audit-Berichte (Angriffsszenarien/Zeilenverweise, nicht für öffentliches Repo)
+SECURITY-ANALYSE-*.md
