@@ -1,0 +1,45 @@
+{% extends 'generic/_base.html' %}
+{% load i18n form_helpers %}
+
+{% block title %}{% trans "Patch settings" %}{% endblock %}
+
+{% block content %}
+  <form method="post" class="object-edit mt-3">
+    {% csrf_token %}
+    <div class="card mb-3">
+      <h2 class="card-header">{% trans "Endpoint-management system" %}</h2>
+      <div class="card-body">
+        <div class="mb-3">
+          <label class="form-label" for="id_backend">{{ form.backend.label }}</label>
+          <select name="backend" id="id_backend" class="form-select"
+                  onchange="window.location.search = '?backend=' + encodeURIComponent(this.value);">
+            {% for value, label in form.backend.field.choices %}
+              <option value="{{ value }}"{% if value == form.backend.value %} selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+          <div class="form-text">{% trans "Without a backend, patches are recorded manually." %}</div>
+        </div>
+        {% render_field form.compliance_makes_due %}
+        {% if unsaved %}<div class="alert alert-info mb-0">{% trans "Not saved yet." %}</div>{% endif %}
+      </div>
+    </div>
+    {% if config_form %}
+      <div class="card mb-3">
+        <h2 class="card-header">{{ backend_cls.label }}</h2>
+        <div class="card-body">
+          {% for field in config_form %}{% render_field field %}{% endfor %}
+          <div class="form-text">{% trans "Secrets are never stored here: enter the name of an environment variable or the path of a file instead." %}</div>
+        </div>
+      </div>
+    {% endif %}
+    <div class="btn-float-group-right">
+      <button type="submit" class="btn btn-primary">{% trans "Save" %}</button>
+    </div>
+  </form>
+  {% if settings.backend and not unsaved %}
+    <form method="post" action="{% url 'plugins:netbox_patch_management:settings_test' %}" class="mt-3">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-outline-secondary"><i class="mdi mdi-connection"></i> {% trans "Test connection" %}</button>
+    </form>
+  {% endif %}
+{% endblock %}

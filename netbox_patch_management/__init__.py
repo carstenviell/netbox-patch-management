@@ -9,15 +9,17 @@ class PatchManagementConfig(PluginConfig):
         'OS patch planning for devices and VMs: update classes with intervals, patch lock, '
         'due list with impact analysis, patch log, pluggable endpoint-management backends.'
     )
-    version = '0.1.0'
+    version = '0.2.0'
     author = 'Carsten Viell'
     base_url = 'patch-management'
     min_version = '4.7.0'
     default_settings = {
-        # Dotted path to a PatchBackend subclass, e.g.
-        # 'netbox_patch_management.backends.baramundi.BaramundiBackend'. None = manual only.
-        'backend': None,
+        # The backend itself is chosen on the settings page (Patch Management -> Settings).
         'status_interval_min': 10,
+        # Local PowerShell scripts must live below this directory.
+        'script_root': '/opt/netbox/patch-scripts',
+        # Additional PatchBackend subclasses (dotted paths) offered on the settings page.
+        'extra_backends': [],
     }
 
     def ready(self):

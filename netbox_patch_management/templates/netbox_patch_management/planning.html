@@ -36,7 +36,7 @@
                 <th>{% trans "Last patched" %}</th>
                 <th>{% trans "Interval" %}</th>
                 <th>{% trans "Due" %}</th>
-                {% if backend %}<th>{{ backend.label }}</th>{% endif %}
+                {% if backend %}<th>{% trans "EMS status" %}</th><th>{{ backend.label }}</th>{% endif %}
                 <th>{% trans "Last status" %}</th>
                 <th></th>
               </tr>
@@ -45,17 +45,18 @@
               {% for r in rows %}
                 <tr>
                   <td><input type="checkbox" class="form-check-input" name="{{ r.param }}" value="{{ r.obj.pk }}"></td>
-                  <td><a href="{{ r.obj.get_absolute_url }}">{{ r.obj }}</a></td>
+                  <td><a href="{{ r.obj.get_absolute_url }}">{{ r.obj }}</a>{% if r.ems_managed %} <i class="mdi mdi-sync text-muted" title="{% trans 'Patch date reported by the EMS' %}"></i>{% endif %}</td>
                   <td>{{ r.obj|meta:"verbose_name"|bettertitle }}</td>
                   <td>{{ r.last|default:_("never") }}</td>
                   <td>{{ r.interval }}</td>
                   <td>
-                    {% if r.overdue_days is None %}<span class="badge text-bg-danger">{% trans "now" %}</span>
+                    {% if r.non_compliant %}<span class="badge text-bg-danger">{% trans "non-compliant" %}</span>
+                    {% elif r.overdue_days is None %}<span class="badge text-bg-danger">{% trans "now" %}</span>
                     {% elif r.overdue_days > 0 %}<span class="badge text-bg-danger">{% blocktrans with n=r.overdue_days %}{{ n }} days overdue{% endblocktrans %}</span>
                     {% elif r.overdue_days == 0 %}<span class="badge text-bg-warning">{% trans "today" %}</span>
                     {% else %}{{ r.due }}{% endif %}
                   </td>
-                  {% if backend %}<td>{% if r.ready %}<i class="mdi mdi-check text-success"></i>{% else %}<span class="text-muted small" title="{{ r.reason }}"><i class="mdi mdi-close text-danger"></i> {{ r.reason }}</span>{% endif %}</td>{% endif %}
+                  {% if backend %}<td>{% include 'netbox_patch_management/inc/ems_state.html' with ems=r.ems %}</td><td>{% if r.ready %}<i class="mdi mdi-check text-success"></i>{% else %}<span class="text-muted small" title="{{ r.reason }}"><i class="mdi mdi-close text-danger"></i> {{ r.reason }}</span>{% endif %}</td>{% endif %}
                   <td>{% if r.last_log %}<span class="badge text-bg-{{ r.last_log.get_status_color }}">{{ r.last_log.get_status_display }}</span> {{ r.last_log.date }}{% else %}{{ ''|placeholder }}{% endif %}</td>
                   <td class="text-end">{% if r.impact_url %}<a href="{{ r.impact_url }}" class="btn btn-sm btn-outline-primary">{% trans "Impact" %}</a>{% endif %}</td>
                 </tr>

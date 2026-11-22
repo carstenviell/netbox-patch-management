@@ -14,3 +14,6 @@ INTERN.md
 
 # Interne Security-Audit-Berichte (Angriffsszenarien/Zeilenverweise, nicht für öffentliches Repo)
 SECURITY-ANALYSE-*.md
+
+# never commit third-party API descriptions (e.g. baramundi bConnect)
+*.json

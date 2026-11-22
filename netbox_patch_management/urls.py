@@ -13,4 +13,6 @@ urlpatterns = (
     path('planning/', views.PlanningView.as_view(), name='planning'),
     path('record/', views.RecordPatchView.as_view(), name='record'),
     path('start/', views.StartPatchView.as_view(), name='start'),
+    path('settings/', views.SettingsView.as_view(), name='settings'),
+    path('settings/test/', views.TestBackendView.as_view(), name='settings_test'),
 )

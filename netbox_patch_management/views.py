@@ -23,10 +23,10 @@ from utilities.views import register_model_view
 from virtualization.models import VirtualMachine
 
 from . import filtersets, forms, tables
-from .backends import get_backend
+from .backends import BackendError, available_backends, get_backend
 from .jobs import StartPatchJob
-from .logic import is_locked, plannable_objects, record_patch, update_class_of
-from .models import PatchLog, UpdateClass
+from .logic import is_ems_managed, is_locked, plannable_objects, record_patch, update_class_of
+from .models import PatchLog, PatchSettings, UpdateClass
 
 IMPACT_SCRIPT = 'ImpactAnalyse'          # netbox-abhaengigkeiten; field names are an interface
 PARAM_FOR = {Device: 'devices', VirtualMachine: 'vms'}
@@ -141,9 +141,10 @@ class PlanningView(PermissionRequiredMixin, View):
         if form.is_valid():
             update_class = form.cleaned_data['update_class']
             querysets = [m.objects.restrict(request.user, 'view') for m in PARAM_FOR]
-            rows = plannable_objects(update_class, form.cleaned_data['day'] or date.today(),
-                                     only_due=not form.cleaned_data['show_all'], querysets=querysets)
             backend = get_backend()
+            rows = plannable_objects(update_class, form.cleaned_data['day'] or date.today(),
+                                     only_due=not form.cleaned_data['show_all'], querysets=querysets,
+                                     backend=backend)
             base = impact_base_url()
             last_logs = {}
             for log in PatchLog.objects.filter(object_id__in=[r['obj'].pk for r in rows]).order_by('created'):
@@ -154,6 +155,7 @@ class PlanningView(PermissionRequiredMixin, View):
                 r['last_log'] = last_logs.get((ContentType.objects.get_for_model(obj).pk, obj.pk))
                 r['impact_url'] = impact_url([obj], base)
                 r['ready'], r['reason'] = backend.can_start(obj) if backend else (False, '')
+                r['ems_managed'] = bool(r['ems'] and r['ems'].last_patched)
         backend = get_backend()
         return render(request, 'netbox_patch_management/planning.html', {
             'form': form, 'rows': rows, 'update_class': update_class,
@@ -169,8 +171,11 @@ class RecordPatchView(PermissionRequiredMixin, View):
     template_name = 'netbox_patch_management/record.html'
 
     def _context(self, request, form, objs):
-        return {'form': form, 'objs': [o for o in objs if not is_locked(o)],
-                'locked': [o for o in objs if is_locked(o)], 'param_for': PARAM_FOR,
+        backend = get_backend()
+        managed = [o for o in objs if not is_locked(o) and is_ems_managed(o, backend)]
+        return {'form': form, 'objs': [o for o in objs if not is_locked(o) and o not in managed],
+                'locked': [o for o in objs if is_locked(o)], 'managed': managed, 'backend': backend,
+                'param_for': PARAM_FOR,
                 'return_url': return_url(request, reverse('plugins:netbox_patch_management:planning'))}
 
     def get(self, request):
@@ -184,12 +189,16 @@ class RecordPatchView(PermissionRequiredMixin, View):
             if not objs:
                 messages.error(request, _('No systems selected.'))
             return render(request, self.template_name, self._context(request, form, objs))
-        logged, refused = record_patch(objs, form.cleaned_data['day'], form.cleaned_data['comment'], request.user)
+        logged, locked, managed = record_patch(objs, form.cleaned_data['day'], form.cleaned_data['comment'],
+                                               request.user, backend=get_backend())
         if logged:
             messages.success(request, _('Patch recorded for %(n)d system(s).') % {'n': len(logged)})
-        if refused:
+        if locked:
             messages.warning(request, _('Refused (patch lock): %(names)s') % {
-                'names': ', '.join(str(o) for o in refused)})
+                'names': ', '.join(str(o) for o in locked)})
+        if managed:
+            messages.warning(request, _('Refused (patch date is reported by the EMS): %(names)s') % {
+                'names': ', '.join(str(o) for o in managed)})
         return redirect(return_url(request, reverse('plugins:netbox_patch_management:patchlog_list')))
 
 
@@ -235,3 +244,64 @@ class StartPatchView(PermissionRequiredMixin, View):
         )
         messages.success(request, _('Start of %(n)d patch job(s) enqueued.') % {'n': len(ready)})
         return redirect(job.get_absolute_url())
+
+
+# ---------------------------------------------------------------------------
+# Settings
+# ---------------------------------------------------------------------------
+
+class SettingsView(PermissionRequiredMixin, View):
+    permission_required = 'netbox_patch_management.change_patchsettings'
+    template_name = 'netbox_patch_management/settings.html'
+
+    def _forms(self, request, settings, data=None):
+        backends = available_backends()
+        key = (data or request.GET).get('backend', settings.backend) or ''
+        base = forms.PatchSettingsForm(data, backends=backends, initial={
+            'backend': key, 'compliance_makes_due': settings.compliance_makes_due})
+        cls = backends.get(key)
+        config = None
+        if cls and cls.config_form:
+            config = cls.config_form(data, prefix='cfg',
+                                     initial=settings.backend_config if key == settings.backend else None)
+        return base, config, key, cls
+
+    def get(self, request):
+        settings = PatchSettings.load()
+        base, config, key, cls = self._forms(request, settings)
+        return render(request, self.template_name, {
+            'form': base, 'config_form': config, 'backend_cls': cls, 'settings': settings,
+            'unsaved': key != settings.backend})
+
+    def post(self, request):
+        settings = PatchSettings.load()
+        base, config, key, cls = self._forms(request, settings, request.POST)
+        if base.is_valid() and (config is None or config.is_valid()):
+            settings.snapshot()
+            settings.backend = key if cls or not key else ''
+            settings.backend_config = dict(config.cleaned_data) if config else {}
+            settings.compliance_makes_due = base.cleaned_data['compliance_makes_due']
+            settings.full_clean()
+            settings.save()
+            messages.success(request, _('Settings saved.'))
+            return redirect('plugins:netbox_patch_management:settings')
+        return render(request, self.template_name, {
+            'form': base, 'config_form': config, 'backend_cls': cls, 'settings': settings, 'unsaved': True})
+
+
+class TestBackendView(PermissionRequiredMixin, View):
+    permission_required = 'netbox_patch_management.change_patchsettings'
+
+    def post(self, request):
+        backend = get_backend()
+        if backend is None:
+            messages.warning(request, _('No backend configured.'))
+        else:
+            try:
+                info = backend.test()
+            except BackendError as exc:
+                messages.error(request, _('Connection to %(name)s failed: %(err)s') % {'name': backend.label, 'err': exc})
+            else:
+                messages.success(request, _('Connection to %(name)s succeeded. %(info)s') % {
+                    'name': backend.label, 'info': info})
+        return redirect('plugins:netbox_patch_management:settings')

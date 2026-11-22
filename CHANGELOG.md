@@ -4,8 +4,21 @@ Format angelehnt an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), Ve
 
 ## [Unveröffentlicht]
 ### Offen
-- baramundi-Backend (`backends/baramundi.py`) – wartet auf `netbox-baramundi` und die bConnect-Specs für Jobs/Endpoints.
+- baramundi-Backend am echten bMS verifizieren (Job-Start, ob `POST JobInstances` ohne `/Start` schon ausführt).
+- PowerShell lokal: `pwsh` ist im Test-Image nicht installiert, getestet nur mit Fake-Executable. SSH ohne Testhost ungetestet.
 - Security-Audit (`SECURITY-ANALYSE-<Datum>.md`).
+
+## [0.2.0] – 2026-11-22
+### Neu
+- Einstellungsseite *Patch-Management → Einstellungen*: Auswahl des Endpoint-Management-Systems (keins/manuell, baramundi, REST-API, PowerShell lokal, PowerShell per SSH, eigene Backends über `extra_backends`), backend-spezifische Felder, „Verbindung testen“. Secrets werden nie in der DB gespeichert (nur Namen von Umgebungsvariablen bzw. Dateipfade).
+- **EMS ist führend:** Sync-Job übernimmt den Endzeitpunkt erfolgreicher Jobs und den vom EMS gemeldeten letzten Patch-Stand als `last_patched` (auch rückwärts) und protokolliert ihn mit dem EMS als Quelle – auch Updates, die direkt im EMS liefen.
+- Compliance aus dem EMS: Spalte „EMS-Status“ in Planung und Panel; nicht konforme Systeme sind (abschaltbar) unabhängig vom Intervall fällig und stehen oben.
+- Backends: REST (Jinja2-Vorlagen in der NetBox-Sandbox, JSON-Pfade, Status-Mapping), PowerShell lokal/SSH (fester Vertrag, JSON über stdin/stdout, Script nur unterhalb von `script_root`, SSH mit gepinntem Host-Key), baramundi (über `netbox-baramundi`).
+- Beispiel-Script `examples/patch-backend.ps1`.
+### Geändert
+- Manuelles Erfassen ist für Systeme mit Patch-Datum aus dem EMS gesperrt.
+- Backend-Schnittstelle: `status()` liefert zusätzlich den Endzeitpunkt, neu `test()`, `patch_state()`, `config_form`. Der Config-Key `backend` entfällt (Auswahl jetzt in der Oberfläche).
+- System-Job heißt jetzt „Patch sync“ (Job-Status + Patch-Stand).
 
 ## [0.1.0] – 2026-11-22
 ### Neu

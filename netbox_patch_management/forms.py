@@ -80,3 +80,15 @@ class RecordPatchForm(forms.Form):
         if day > date.today():
             raise forms.ValidationError(_('The date must not be in the future.'))
         return day
+
+
+class PatchSettingsForm(forms.Form):
+    backend = forms.ChoiceField(label=_('Endpoint-management system'), required=False)
+    compliance_makes_due = forms.BooleanField(
+        label=_('Non-compliant systems are due'), required=False,
+        help_text=_('Systems the backend reports as non-compliant are due regardless of their interval'))
+
+    def __init__(self, *args, backends=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['backend'].choices = [('', _('None (manual only)'))] + [
+            (key, cls.label) for key, cls in sorted((backends or {}).items())]

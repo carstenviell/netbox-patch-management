@@ -27,8 +27,9 @@ pip install netbox-patch-management
 PLUGINS = ["netbox_patch_management"]
 PLUGINS_CONFIG = {
     "netbox_patch_management": {
-        "backend": None,            # dotted path to a PatchBackend subclass, None = manual only
-        "status_interval_min": 10,  # how often running backend jobs are polled
+        "status_interval_min": 10,                 # sync interval for job status and patch state
+        "script_root": "/opt/netbox/patch-scripts", # local PowerShell scripts must live below this directory
+        "extra_backends": [],                      # additional PatchBackend classes (dotted paths)
     },
 }
 ```
@@ -41,41 +42,73 @@ Then run `manage.py migrate`. The plugin creates these custom fields on devices 
 | `patch_class` | object (update class) | Assignment to an update class |
 | `patch_interval_days` | integer | Overrides the class interval |
 | `patch_lock` | boolean | Excludes the system from patching |
-| `last_patched` | date (read-only in the UI) | Set by the patch log |
+| `last_patched` | date (read-only in the UI) | Set by the patch log / the EMS |
 
 Labels are created in the instance's `LANGUAGE_CODE`. Rename them in *Customization → Custom Fields* if needed.
 
 ## Usage
 
-1. *Patch Management → Update classes*: create classes with interval and maintenance window.
+1. *Patch Management → Update classes*: create classes with interval, maintenance window and (with an EMS) the job to run.
 2. Assign devices/VMs to a class (edit form, bulk edit or CSV import of `cf_patch_class`).
 3. *Patch Management → Planning*: choose a class. Select systems and
    - **Impact of selection**: opens the impact analysis (maintenance scenario)
-   - **Record as patched**: date + mandatory comment, writes the patch log
-   - **Start via &lt;backend&gt;**: only with a configured backend and the permission `start_patch_job`
-4. Device/VM detail pages show a *Patch Management* panel with due date, lock, latest log entries and actions.
+   - **Record as patched**: date + mandatory comment, writes the patch log (systems without EMS data only)
+   - **Start via &lt;EMS&gt;**: only with a configured backend and the permission `start_patch_job`
+4. Device/VM detail pages show a *Patch Management* panel with due date, lock, EMS status, latest log entries and actions.
 
 ### Interface to netbox-abhaengigkeiten
 
 The impact link targets the script named `ImpactAnalyse` and its fields `szenario`, `devices`, `vms`.
 If the script is not installed, the impact buttons are hidden.
 
-## Backends
+## Endpoint-management systems (EMS)
 
-A backend implements `netbox_patch_management.backends.PatchBackend`:
+Choose the EMS under *Patch Management → Settings* (permission `change_patchsettings`; grant it to admins only,
+the settings define URLs and scripts that NetBox calls). **Secrets are never stored in the database** –
+settings only name environment variables or files. *Test connection* checks the configuration.
 
-```python
-class PatchBackend:
-    name = "mybackend"     # stored as PatchLog.source
-    label = "My EMS"       # shown in the UI
-    def job_choices(self): ...            # [(job_ref, label)] for the update class form
-    def can_start(self, obj): ...         # (bool, reason)
-    def start(self, obj, job_ref): ...    # -> external id
-    def status(self, external_id): ...    # -> (PatchStatusChoices value, raw status)
+**The EMS is authoritative.** The sync job (every `status_interval_min` minutes)
+
+- polls started jobs; on success the patch date is the EMS finish time (not the time of the poll),
+- reads the patch state of all systems with an update class: a reported last-patch date replaces
+  `last_patched` (also if it is older) and is written to the patch log with the EMS as source – so patches
+  run directly in the EMS show up too,
+- stores compliance; with *Non-compliant systems are due* enabled (default) such systems are due regardless of
+  their interval and listed first.
+
+Systems with a patch date from the EMS cannot be recorded manually. Systems the EMS does not know
+(switches, firewalls, ...) stay manual.
+
+| Backend | Use |
+|---|---|
+| baramundi | Requires [netbox-baramundi](https://github.com/carstenviell/netbox-baramundi) (connection settings and endpoint mapping live there). Requires **baramundi bConnect API v2**. |
+| REST API | Generic HTTP/JSON EMS: URL and body templates (Jinja2, sandboxed; variables `obj`, `cf`, `job_ref`, `external_id`), values via dotted JSON paths (`data.0.id`), status mapping `raw=succeeded|failed|cancelled|started`. Token from an environment variable. |
+| PowerShell | Local `pwsh` in the NetBox worker container (install PowerShell in your image), script below `script_root`. |
+| PowerShell (SSH) | Script on a remote host via OpenSSH, key file and pinned `known_hosts` file (unknown hosts are refused). |
+
+### PowerShell contract
+
+```
+pwsh -NoProfile -NonInteractive -File <script> -Action <test|jobs|start|status|state>
 ```
 
-Starting runs as a background job. The system job *Patch job status* polls running jobs.
-On success it sets `last_patched`, while failed or cancelled jobs are only logged.
+Input arrives as JSON on **stdin** (`action`, `objects` [`key`, `type`, `id`, `name`, `custom_fields`],
+`job_ref`, `external_id`). Object data is never passed on the command line. The script prints JSON:
+
+| Action | Output |
+|---|---|
+| `test` | `{"info": "..."}` |
+| `jobs` | `{"jobs": [{"id": "...", "label": "..."}]}` |
+| `start` | `{"id": "<external id>"}` |
+| `status` | `{"status": "succeeded\|failed\|cancelled\|started", "raw": "...", "finished_at": "<ISO 8601>"}` |
+| `state` | `{"states": {"<key>": {"last_patched": "<YYYY-MM-DD>", "compliant": true, "detail": "..."}}}` |
+
+A non-zero exit code is an error (stderr is shown). See [`examples/patch-backend.ps1`](examples/patch-backend.ps1).
+
+### Own backends
+
+Subclass `netbox_patch_management.backends.PatchBackend` (`key`, `label`, `config_form`, `test`, `job_choices`,
+`can_start`, `start`, `status`, `patch_state`) and add it to `extra_backends`.
 
 ## License
 

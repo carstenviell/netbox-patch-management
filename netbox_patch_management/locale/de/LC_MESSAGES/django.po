@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: netbox-patch-management\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-22 13:26+0100\n"
+"POT-Creation-Date: 2026-11-22 14:02+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -12,6 +12,226 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "Starting jobs is not supported by this backend"
+msgstr "Dieses Backend kann keine Jobs starten"
+
+msgid "Job status is not supported by this backend"
+msgstr "Dieses Backend liefert keinen Job-Status"
+
+#, python-format
+msgid "Environment variable %(name)s is not set"
+msgstr "Umgebungsvariable %(name)s ist nicht gesetzt"
+
+msgid "Timeout (s)"
+msgstr "Timeout (s)"
+
+msgid "Start job immediately after assignment"
+msgstr "Job nach Zuweisung sofort starten"
+
+msgid "Otherwise the job runs according to its schedule in baramundi"
+msgstr "Sonst läuft der Job nach seinem Zeitplan in baramundi"
+
+msgid "No baramundi endpoint assigned"
+msgstr "Kein baramundi-Endpoint zugeordnet"
+
+msgid "baramundi returned no job instance"
+msgstr "baramundi hat keine Job-Instanz geliefert"
+
+msgid "critical"
+msgstr "kritisch"
+
+msgid "security"
+msgstr "Sicherheit"
+
+#| msgid "Record patch"
+msgid "Script path"
+msgstr "Patch erfassen"
+
+msgid "Absolute path below the configured script directory"
+msgstr "Absoluter Pfad unterhalb des konfigurierten Script-Verzeichnisses"
+
+msgid "pwsh executable"
+msgstr "pwsh-Programm"
+
+#, python-format
+msgid "The script must be located below %(root)s"
+msgstr "Das Script muss unterhalb von %(root)s liegen"
+
+msgid "Invalid characters"
+msgstr "Ungültige Zeichen"
+
+msgid "Host"
+msgstr "Host"
+
+msgid "Port"
+msgstr "Port"
+
+msgid "User"
+msgstr "Benutzer"
+
+msgid "Private key file"
+msgstr "Private-Key-Datei"
+
+msgid "Path inside the NetBox container"
+msgstr "Pfad im NetBox-Container"
+
+msgid "known_hosts file"
+msgstr "known_hosts-Datei"
+
+msgid "Pinned host key; connections to unknown hosts are refused"
+msgstr "Gepinnter Host-Key; Verbindungen zu unbekannten Hosts werden abgelehnt"
+
+#| msgid "Record patch"
+msgid "Remote script path"
+msgstr "Patch erfassen"
+
+msgid "Remote pwsh executable"
+msgstr "pwsh-Programm auf dem Zielhost"
+
+msgid "Absolute path required"
+msgstr "Absoluter Pfad erforderlich"
+
+msgid "Script output is not JSON"
+msgstr "Script-Ausgabe ist kein JSON"
+
+msgid "Script returned no job ID"
+msgstr "Script hat keine Job-ID geliefert"
+
+#, python-format
+msgid "Invalid date for %(key)s"
+msgstr "Ungültiges Datum für %(key)s"
+
+#, python-format
+msgid "Invalid SSH setting: %(field)s"
+msgstr "Ungültige SSH-Einstellung: %(field)s"
+
+msgid "Key and known_hosts files must be absolute paths"
+msgstr "Key- und known_hosts-Datei müssen absolute Pfade sein"
+
+msgid "Jinja2 template; variables: obj, cf, job_ref, external_id"
+msgstr "Jinja2-Vorlage; Variablen: obj, cf, job_ref, external_id"
+
+msgid "Dotted path in the JSON response, e.g. data.0.id"
+msgstr "Punkt-Pfad in der JSON-Antwort, z. B. data.0.id"
+
+#, python-format
+msgid "Invalid status in line \"%(line)s\""
+msgstr "Ungültiger Status in Zeile \"%(line)s\""
+
+msgid "Base URL"
+msgstr "Basis-URL"
+
+msgid "Auth header"
+msgstr "Auth-Header"
+
+msgid "Auth prefix"
+msgstr "Auth-Präfix"
+
+msgid "Token environment variable"
+msgstr "Umgebungsvariable für das Token"
+
+msgid "Name of the environment variable holding the token (never the token itself)"
+msgstr "Name der Umgebungsvariable mit dem Token (nie das Token selbst)"
+
+msgid "Verify TLS"
+msgstr "TLS prüfen"
+
+msgid "CA bundle path"
+msgstr "Pfad zum CA-Bundle"
+
+msgid "Job list URL"
+msgstr "URL der Job-Liste"
+
+msgid "Job list path"
+msgstr "Pfad der Job-Liste"
+
+msgid "Job ID path"
+msgstr "Pfad der Job-ID"
+
+msgid "Job label path"
+msgstr "Pfad des Job-Namens"
+
+#| msgid "Started"
+msgid "Start method"
+msgstr "Gestartet"
+
+#| msgid "Start"
+msgid "Start URL"
+msgstr "Starten"
+
+#| msgid "Started"
+msgid "Start body"
+msgstr "Gestartet"
+
+msgid "Job instance ID path"
+msgstr "Pfad der Job-Instanz-ID"
+
+#| msgid "Status"
+msgid "Status URL"
+msgstr "Status"
+
+#| msgid "Status"
+msgid "Status path"
+msgstr "Status"
+
+msgid "Finished-at path"
+msgstr "Pfad des Endzeitpunkts"
+
+#| msgid "Status"
+msgid "Status mapping"
+msgstr "Status"
+
+msgid "One \"raw=status\" per line; status is succeeded, failed, cancelled or started. Unmapped values count as started."
+msgstr "Je Zeile \"rohwert=status\"; status ist succeeded, failed, cancelled oder started. Nicht zugeordnete Werte gelten als started."
+
+msgid "Patch state URL (per object)"
+msgstr "URL für den Patch-Stand (je Objekt)"
+
+#| msgid "Last patched"
+msgid "Last-patched path"
+msgstr "Letztes Update"
+
+msgid "Compliance path"
+msgstr "Pfad der Compliance"
+
+msgid "Compliant value"
+msgstr "Wert für konform"
+
+msgid "Detail path"
+msgstr "Pfad des Details"
+
+#, python-format
+msgid "Template error: %(err)s"
+msgstr "Vorlagenfehler: %(err)s"
+
+msgid "Response is not JSON"
+msgstr "Antwort ist kein JSON"
+
+#, python-format
+msgid "%(n)d jobs found"
+msgstr "%(n)d Jobs gefunden"
+
+msgid "Base URL reachable"
+msgstr "Basis-URL erreichbar"
+
+#| msgid "No patch backend configured."
+msgid "No start URL configured"
+msgstr "Kein Patch-Backend konfiguriert."
+
+msgid "Start body is not valid JSON"
+msgstr "Start-Body ist kein gültiges JSON"
+
+msgid "No job instance ID in response"
+msgstr "Keine Job-Instanz-ID in der Antwort"
+
+#| msgid "No patch backend configured."
+msgid "No status URL configured"
+msgstr "Kein Patch-Backend konfiguriert."
+
+#, python-format
+msgid "Invalid date in patch state of %(obj)s"
+msgstr "Ungültiges Datum im Patch-Stand von %(obj)s"
 
 msgid "Update class"
 msgstr "Update-Klasse"
@@ -26,9 +246,7 @@ msgid "Patch lock"
 msgstr "Update-Sperre"
 
 msgid "Locked systems are hidden from patch planning and cannot be patched"
-msgstr "Gesperrte Systeme werden in der Planung ausgeblendet und können nicht gepatcht werden"
-"Gesperrte Systeme werden in der Planung ausgeblendet und können nicht "
-"gepatcht werden"
+msgstr "Gesperrte Systeme werden in der Planung ausgeblendet und können nicht gepatcht werdenGesperrte Systeme werden in der Planung ausgeblendet und können nicht gepatcht werden"
 
 msgid "Last patched"
 msgstr "Letztes Update"
@@ -75,6 +293,23 @@ msgstr "Was wurde gemacht (z. B. OS-Updates, Neustart)"
 msgid "The date must not be in the future."
 msgstr "Das Datum darf nicht in der Zukunft liegen."
 
+msgid "Endpoint-management system"
+msgstr "Endpoint-Management-System"
+
+#| msgid "No systems due."
+msgid "Non-compliant systems are due"
+msgstr "Keine fälligen Systeme."
+
+msgid "Systems the backend reports as non-compliant are due regardless of their interval"
+msgstr "Vom Backend als nicht konform gemeldete Systeme sind unabhängig vom Intervall fällig"
+
+msgid "None (manual only)"
+msgstr "Keins (nur manuell)"
+
+#, python-format
+msgid "Reported by %(ems)s"
+msgstr "Gemeldet von %(ems)s"
+
 msgid "Started"
 msgstr "Gestartet"
 
@@ -99,11 +334,8 @@ msgstr "Wartungsfenster"
 msgid "backend job"
 msgstr "Backend-Job"
 
-msgid ""
-"Job reference in the endpoint-management system (e.g. baramundi job "
-"definition)"
-msgstr "Job-Referenz im Endpoint-Management-System (z. B. baramundi-Job-Definition)"
-"Job-Referenz im Endpoint-Management-System (z. B. baramundi-Job-Definition)"
+msgid "Job reference in the endpoint-management system (e.g. baramundi job definition)"
+msgstr "Job-Referenz im Endpoint-Management-System (z. B. baramundi-Job-Definition)Job-Referenz im Endpoint-Management-System (z. B. baramundi-Job-Definition)"
 
 msgid "description"
 msgstr "Beschreibung"
@@ -144,6 +376,22 @@ msgstr "Patch-Protokolleintrag"
 msgid "patch log"
 msgstr "Patch-Protokoll"
 
+#| msgid "backend job"
+msgid "backend"
+msgstr "Backend-Job"
+
+#| msgid "Include systems not yet due"
+msgid "non-compliant systems are due"
+msgstr "Auch noch nicht fällige Systeme anzeigen"
+
+#| msgid "patch log"
+msgid "patch settings"
+msgstr "Patch-Protokoll"
+
+#| msgid "Patch planning"
+msgid "Patch settings"
+msgstr "Patch-Planung"
+
 msgid "Patch Management"
 msgstr "Patch-Management"
 
@@ -159,8 +407,27 @@ msgstr "Hinzufügen"
 msgid "Patch log"
 msgstr "Patch-Protokoll"
 
+msgid "Settings"
+msgstr "Einstellungen"
+
 msgid "Object"
 msgstr "Objekt"
+
+msgid "compliant"
+msgstr "konform"
+
+msgid "non-compliant"
+msgstr "nicht konform"
+
+msgid "unknown"
+msgstr "unbekannt"
+
+#| msgid "Last status"
+msgid "Last sync"
+msgstr "Letzter Status"
+
+msgid "not reported"
+msgstr "nicht gemeldet"
 
 msgid "Interval"
 msgstr "Intervall"
@@ -178,6 +445,10 @@ msgstr "Nächste Fälligkeit"
 msgid "now"
 msgstr "jetzt"
 
+#| msgid "status"
+msgid "EMS status"
+msgstr "Status"
+
 msgid "Locked"
 msgstr "Gesperrt"
 
@@ -186,9 +457,6 @@ msgstr "Nein"
 
 msgid "Date"
 msgstr "Datum"
-
-msgid "User"
-msgstr "Benutzer"
 
 msgid "Maintenance impact"
 msgstr "Wartungs-Impact"
@@ -226,6 +494,9 @@ msgstr "Fällig"
 msgid "Last status"
 msgstr "Letzter Status"
 
+msgid "Patch date reported by the EMS"
+msgstr "Patch-Datum wird vom EMS gemeldet"
+
 #, python-format
 msgid "%(n)s days overdue"
 msgstr "%(n)s Tage überfällig"
@@ -251,6 +522,11 @@ msgstr "Systeme"
 msgid "No systems selected (or no permission to change them)."
 msgstr "Keine Systeme ausgewählt (oder keine Berechtigung, sie zu ändern)."
 
+#, fuzzy, python-format
+#| msgid "Patch lock - will not be recorded:"
+msgid "Patch date is reported by %(name)s - will not be recorded manually:"
+msgstr "Update-Sperre – wird nicht erfasst:"
+
 msgid "Patch lock - will not be recorded:"
 msgstr "Update-Sperre – wird nicht erfasst:"
 
@@ -259,6 +535,21 @@ msgstr "Abbrechen"
 
 msgid "Record"
 msgstr "Erfassen"
+
+msgid "Without a backend, patches are recorded manually."
+msgstr "Ohne Backend werden Patches manuell erfasst."
+
+msgid "Not saved yet."
+msgstr "Noch nicht gespeichert."
+
+msgid "Secrets are never stored here: enter the name of an environment variable or the path of a file instead."
+msgstr "Secrets werden hier nie gespeichert: Stattdessen den Namen einer Umgebungsvariable oder den Pfad einer Datei angeben."
+
+msgid "Save"
+msgstr "Speichern"
+
+msgid "Test connection"
+msgstr "Verbindung testen"
 
 #, python-format
 msgid "Start patch jobs via %(name)s"
@@ -271,18 +562,10 @@ msgid "Ready"
 msgstr "Bereit"
 
 #, python-format
-msgid ""
-"%(n)s job will be started in %(name)s. Systems that are not ready are "
-"skipped."
-msgid_plural ""
-"%(n)s jobs will be started in %(name)s. Systems that are not ready are "
-"skipped."
-msgstr[0] ""
-"%(n)s Job wird in %(name)s gestartet. Nicht bereite Systeme werden "
-"übersprungen."
-msgstr[1] ""
-"%(n)s Jobs werden in %(name)s gestartet. Nicht bereite Systeme werden "
-"übersprungen."
+msgid "%(n)s job will be started in %(name)s. Systems that are not ready are skipped."
+msgid_plural "%(n)s jobs will be started in %(name)s. Systems that are not ready are skipped."
+msgstr[0] "%(n)s Job wird in %(name)s gestartet. Nicht bereite Systeme werden übersprungen."
+msgstr[1] "%(n)s Jobs werden in %(name)s gestartet. Nicht bereite Systeme werden übersprungen."
 
 msgid "Start"
 msgstr "Starten"
@@ -301,6 +584,11 @@ msgstr "Patch für %(n)d System(e) erfasst."
 msgid "Refused (patch lock): %(names)s"
 msgstr "Abgewiesen (Update-Sperre): %(names)s"
 
+#, fuzzy, python-format
+#| msgid "Refused (patch lock): %(names)s"
+msgid "Refused (patch date is reported by the EMS): %(names)s"
+msgstr "Abgewiesen (Update-Sperre): %(names)s"
+
 msgid "Update class has no backend job"
 msgstr "Update-Klasse hat keinen Backend-Job"
 
@@ -313,3 +601,18 @@ msgstr "Keines der ausgewählten Systeme kann gestartet werden."
 #, python-format
 msgid "Start of %(n)d patch job(s) enqueued."
 msgstr "Start von %(n)d Patch-Job(s) eingereiht."
+
+msgid "Settings saved."
+msgstr "Einstellungen gespeichert."
+
+#| msgid "No patch backend configured."
+msgid "No backend configured."
+msgstr "Kein Patch-Backend konfiguriert."
+
+#, python-format
+msgid "Connection to %(name)s failed: %(err)s"
+msgstr "Verbindung zu %(name)s fehlgeschlagen: %(err)s"
+
+#, python-format
+msgid "Connection to %(name)s succeeded. %(info)s"
+msgstr "Verbindung zu %(name)s erfolgreich. %(info)s"

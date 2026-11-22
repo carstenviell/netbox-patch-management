@@ -5,7 +5,7 @@ from urllib.parse import urlencode
 from netbox.plugins import PluginTemplateExtension
 
 from .backends import BackendError, get_backend
-from .logic import due_date, effective_interval, is_locked, last_patched, update_class_of
+from .logic import due_date, effective_interval, ems_state_of, is_locked, last_patched, update_class_of
 from .models import PatchLog
 from .views import PARAM_FOR, impact_url
 
@@ -31,12 +31,16 @@ class PatchPanel(PluginTemplateExtension):
             if can_start and not (update_class and update_class.backend_job_ref):
                 can_start = False
 
+        ems = ems_state_of(obj, backend) if backend else None
+        ems_managed = bool(ems and ems.last_patched)
         logs = PatchLog.objects.restrict(request.user, 'view').filter(
             object_type=ContentType.objects.get_for_model(obj), object_id=obj.pk)[:5]
         return self.render('netbox_patch_management/object_panel.html', extra_context={
             'update_class': update_class, 'interval': interval, 'last': last,
             'due': due_date(last, interval) if interval else None, 'locked': locked, 'logs': logs,
-            'can_record': not locked and request.user.has_perm('netbox_patch_management.add_patchlog'),
+            'ems': ems, 'ems_managed': ems_managed,
+            'can_record': not locked and not ems_managed
+                          and request.user.has_perm('netbox_patch_management.add_patchlog'),
             'record_url': f"{reverse('plugins:netbox_patch_management:record')}?{query}",
             'can_start': can_start, 'start_reason': reason, 'backend': backend,
             'start_url': f"{reverse('plugins:netbox_patch_management:start')}?{query}",

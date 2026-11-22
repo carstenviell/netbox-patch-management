@@ -1,12 +1,14 @@
 from datetime import date
 
 from django.contrib.contenttypes.models import ContentType
+from django.utils import timezone
 
 from netbox.jobs import JobRunner, system_job
 from netbox.plugins import get_plugin_config
 
 from .backends import BackendError, get_backend
-from .logic import is_locked, mark_patched, new_log, update_class_of
+from .custom_fields import CF_CLASS, CF_LOCK
+from .logic import PATCHABLE_MODELS, apply_ems_report, is_locked, mark_patched, new_log, update_class_of
 from .models import PatchLog, PatchStatusChoices
 
 
@@ -39,13 +41,13 @@ class StartPatchJob(JobRunner):
                 self.logger.warning(f'{obj}: skipped ({reason or "locked or no job"})')
                 continue
             try:
-                external_id = backend.start(obj, update_class.backend_job_ref)
+                external_id = backend.start(obj, update_class.backend_job_ref)  # no retry: avoid duplicate jobs
             except BackendError as exc:
-                new_log(obj, today, user, source=backend.name, status=PatchStatusChoices.FAILED, comment=str(exc))
+                new_log(obj, today, user, source=backend.key, status=PatchStatusChoices.FAILED, comment=str(exc))
                 self.logger.error(f'{obj}: {exc}')
                 failed += 1
                 continue
-            new_log(obj, today, user, source=backend.name, status=PatchStatusChoices.STARTED,
+            new_log(obj, today, user, source=backend.key, status=PatchStatusChoices.STARTED,
                     external_id=str(external_id))
             self.logger.info(f'{obj}: started ({external_id})')
             started += 1
@@ -53,11 +55,11 @@ class StartPatchJob(JobRunner):
 
 
 def poll_status(backend, logger):
-    """Update all running entries. On success, last_patched is set via mark_patched()."""
-    for log in PatchLog.objects.filter(status=PatchStatusChoices.STARTED, source=backend.name):
+    """Update running entries. On success the EMS finish time (not the poll time) is the patch date."""
+    for log in PatchLog.objects.filter(status=PatchStatusChoices.STARTED, source=backend.key):
         try:
-            status, raw = backend.status(log.external_id)
-        except BackendError as exc:
+            status, raw, finished_at = backend.status(log.external_id)
+        except (BackendError, ValueError) as exc:
             logger.warning(f'{log.object_name}: status query failed: {exc}')
             continue
         if status not in PatchStatusChoices.values():
@@ -65,21 +67,43 @@ def poll_status(backend, logger):
             status = PatchStatusChoices.STARTED
         if status == log.status and raw == log.raw_status:
             continue
-        log.status, log.raw_status = status, raw
+        log.status, log.raw_status = status, raw[:100]
         if status == PatchStatusChoices.SUCCEEDED:
-            log.date = date.today()
-            if log.object is not None:
-                mark_patched(log.object, log.date)
+            log.date = timezone.localdate(finished_at) if finished_at and timezone.is_aware(finished_at) \
+                else (finished_at.date() if finished_at else date.today())
+            if log.object is not None:  # the patch happened - record it even if locked meanwhile
+                mark_patched(log.object, log.date, force=True)
         log.save()
         logger.info(f'{log.object_name}: {status} ({raw})')
 
 
+def sync_states(backend, logger):
+    """Take over patch date and compliance reported by the EMS for all plannable objects."""
+    objs = []
+    for model in PATCHABLE_MODELS:
+        objs += list(model.objects.filter(**{f'custom_field_data__{CF_CLASS}__isnull': False})
+                     .exclude(**{f'custom_field_data__{CF_CLASS}': None})
+                     .exclude(**{f'custom_field_data__{CF_LOCK}': True}))
+    try:
+        reports = backend.patch_state(objs)
+    except BackendError as exc:
+        logger.warning(f'Patch state query failed: {exc}')
+        return
+    changed = sum(apply_ems_report(obj, report, backend) for obj, report in reports.items())
+    logger.info(f'Patch state: {len(reports)} of {len(objs)} systems reported, {changed} patch date(s) updated.')
+
+
+def run_sync(logger):
+    backend = get_backend()
+    if backend is not None:
+        poll_status(backend, logger)
+        sync_states(backend, logger)
+
+
 @system_job(interval=get_plugin_config('netbox_patch_management', 'status_interval_min'))
-class PatchStatusJob(JobRunner):
+class PatchSyncJob(JobRunner):
     class Meta:
-        name = 'Patch job status'
+        name = 'Patch sync'
 
     def run(self, *args, **kwargs):
-        backend = get_backend()
-        if backend is not None:
-            poll_status(backend, self.logger)
+        run_sync(self.logger)

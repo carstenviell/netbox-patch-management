@@ -17,5 +17,7 @@ menu = PluginMenu(
         ),
         PluginMenuItem(link='plugins:netbox_patch_management:patchlog_list', link_text=_('Patch log'),
                        permissions=['netbox_patch_management.view_patchlog']),
+        PluginMenuItem(link='plugins:netbox_patch_management:settings', link_text=_('Settings'),
+                       permissions=['netbox_patch_management.change_patchsettings']),
     )),),
 )

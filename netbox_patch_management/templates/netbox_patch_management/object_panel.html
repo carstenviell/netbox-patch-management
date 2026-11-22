@@ -12,12 +12,18 @@
     </tr>
     <tr>
       <th scope="row">{% trans "Last patched" %}</th>
-      <td>{{ last|default:_("never") }}</td>
+      <td>{{ last|default:_("never") }}{% if ems_managed %} <span class="text-muted small">({{ backend.label }})</span>{% endif %}</td>
     </tr>
     <tr>
       <th scope="row">{% trans "Next due" %}</th>
       <td>{% if locked %}{{ ''|placeholder }}{% elif update_class %}{{ due|default:_("now") }}{% else %}{{ ''|placeholder }}{% endif %}</td>
     </tr>
+    {% if backend %}
+      <tr>
+        <th scope="row">{% trans "EMS status" %}</th>
+        <td>{% include 'netbox_patch_management/inc/ems_state.html' %}</td>
+      </tr>
+    {% endif %}
     <tr>
       <th scope="row">{% trans "Patch lock" %}</th>
       <td>{% if locked %}<span class="badge text-bg-warning">{% trans "Locked" %}</span>{% else %}{% trans "No" %}{% endif %}</td>

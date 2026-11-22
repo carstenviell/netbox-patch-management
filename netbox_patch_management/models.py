@@ -88,3 +88,48 @@ class PatchLog(models.Model):
 
     def get_status_color(self):
         return PatchStatusChoices.colors.get(self.status)
+
+
+class PatchSettings(NetBoxModel):
+    """Singleton (pk=1): selected endpoint-management backend and its configuration.
+    Secrets are never stored here - config fields only name environment variables / files."""
+    backend = models.CharField(verbose_name=_('backend'), max_length=50, blank=True)
+    backend_config = models.JSONField(default=dict, blank=True)
+    compliance_makes_due = models.BooleanField(
+        verbose_name=_('non-compliant systems are due'), default=True,
+        help_text=_('Systems the backend reports as non-compliant are due regardless of their interval'),
+    )
+
+    class Meta:
+        verbose_name = _('patch settings')
+        verbose_name_plural = _('patch settings')
+
+    def __str__(self):
+        return str(_('Patch settings'))
+
+    def get_absolute_url(self):
+        return reverse('plugins:netbox_patch_management:settings')
+
+    @classmethod
+    def load(cls):
+        return cls.objects.get_or_create(pk=1)[0]
+
+
+class EmsState(models.Model):
+    """Last state the backend reported for an object (one row per object)."""
+    object_type = models.ForeignKey(ContentType, on_delete=models.CASCADE, related_name='+')
+    object_id = models.PositiveBigIntegerField()
+    object = GenericForeignKey('object_type', 'object_id')
+    source = models.CharField(max_length=50)
+    last_patched = models.DateField(null=True, blank=True)
+    compliant = models.BooleanField(null=True, blank=True)
+    detail = models.CharField(max_length=300, blank=True)
+    synced_at = models.DateTimeField()
+
+    objects = RestrictedQuerySet.as_manager()
+
+    class Meta:
+        constraints = (models.UniqueConstraint(fields=('object_type', 'object_id'), name='%(app_label)s_emsstate_object'),)
+
+    def __str__(self):
+        return f'{self.source}: {self.last_patched}'

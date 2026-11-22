@@ -16,6 +16,11 @@
         {% else %}
           <p class="text-muted mb-0">{% trans "No systems selected (or no permission to change them)." %}</p>
         {% endif %}
+        {% if managed %}
+          <div class="alert alert-info mt-3 mb-0">
+            {% blocktrans with name=backend.label %}Patch date is reported by {{ name }} - will not be recorded manually:{% endblocktrans %} {{ managed|join:", " }}
+          </div>
+        {% endif %}
         {% if locked %}
           <div class="alert alert-warning mt-3 mb-0">
             {% trans "Patch lock - will not be recorded:" %} {{ locked|join:", " }}
